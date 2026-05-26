@@ -1,0 +1,30 @@
+{
+  "name": "agent-toast",
+  "version": "0.3.2",
+  "description": "Cross-platform desktop notification (Windows/macOS/Linux) when Claude Code finishes a turn. Windows path is ThreatLocker-safe (inline PowerShell). Configurable agent name, icon, optional sound.",
+  "author": {
+    "name": "Khanh Pham"
+  },
+  "license": "MIT",
+  "keywords": ["hook", "notification", "toast", "windows", "wsl"],
+  "userConfig": {
+    "agent_name": {
+      "type": "string",
+      "title": "Agent name",
+      "description": "Toast title shown on every notification. Example: \"Astro Agent\", \"Khanh Bot\".",
+      "default": "Astro Agent"
+    },
+    "icon_path": {
+      "type": "file",
+      "title": "Custom icon (PNG only)",
+      "description": "Absolute path to a .png file. Both styles work: Windows C:\\\\Users\\\\you\\\\bot.png or WSL /mnt/c/Users/you/bot.png. Leave blank to use the bundled astronaut.",
+      "default": ""
+    },
+    "beep_enabled": {
+      "type": "string",
+      "title": "Play beep after toast?",
+      "description": "Type \"yes\" to also play an 800Hz beep through the Windows speaker. Type \"no\" (default) for silent toast only.",
+      "default": "no"
+    }
+  }
+}

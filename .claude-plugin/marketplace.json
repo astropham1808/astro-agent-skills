@@ -1,0 +1,13 @@
+{
+  "name": "astro-agent-skills",
+  "owner": {
+    "name": "Khanh Pham"
+  },
+  "plugins": [
+    {
+      "name": "agent-toast",
+      "source": "./plugins/agent-toast",
+      "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep."
+    }
+  ]
+}
