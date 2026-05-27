@@ -105,10 +105,11 @@ PS_EOF
 ###############################################################################
 notify_macos() {
     if command -v terminal-notifier >/dev/null 2>&1; then
+        # -appIcon is ignored on macOS 10.9+; -contentImage shows the image in the notification body.
         terminal-notifier \
             -title "$AGENT_NAME" \
             -message "Task complete" \
-            -appIcon "$ICON_PATH" \
+            -contentImage "$ICON_PATH" \
             >/dev/null 2>&1 || true
     else
         # Fallback: osascript display notification (no custom icon possible).

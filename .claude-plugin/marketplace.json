@@ -13,7 +13,7 @@
       "name": "agent-toast",
       "source": "./plugins/agent-toast",
       "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep.",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "author": {
         "name": "Khanh Pham"
       },
