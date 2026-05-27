@@ -6,7 +6,7 @@ A small Claude Code plugin marketplace. Currently ships one plugin; more may fol
 
 | Plugin | What it does |
 |---|---|
-| [`agent-toast`](./plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Works on Windows (WinRT toast), macOS (`terminal-notifier` or AppleScript), and Linux (`notify-send`). Configurable agent name, icon, optional sound. |
+| [`agent-toast`](./plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Built for WSL users in restricted environments where Claude Desktop is blocked by policy or endpoint security (ThreatLocker-safe: no `.ps1` file, no modules). Also works on macOS and Linux. |
 
 ## Install
 

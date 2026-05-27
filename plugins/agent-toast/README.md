@@ -2,6 +2,26 @@
 
 A Claude Code plugin that pops a desktop notification + optional sound whenever Claude finishes a turn (`Stop` event). One shell hook, three platform paths.
 
+## Why this exists
+
+In many enterprise or regulated environments, you face a combination of restrictions:
+
+- **Claude Desktop is blocked by policy** - your org restricts what apps can be installed
+- **ThreatLocker or similar endpoint security** blocks `.ps1` files, unsigned executables, or any software not on an allowlist
+- **You are forced to use WSL** - Claude Code runs inside WSL on Windows, away from the normal Windows UI
+- **Claude Desktop notifications do not reach you** - even when Claude Desktop is available, WSL-based sessions may not trigger its built-in notifications
+
+The result: you kick off a long Claude Code task, switch context, and have no idea when it finishes. You either babysit the terminal or waste time checking back too early or too late.
+
+**agent-toast solves this** by firing a native Windows toast notification directly from WSL using inline PowerShell (no `.ps1` file written to disk, no PowerShell module required). It bypasses most endpoint security restrictions because:
+
+- The PowerShell command runs inline via `-Command -` (stdin), not a script file on disk
+- No external modules are loaded
+- No registry writes or file drops outside of what Claude Code already does
+- The notification goes through WinRT, the same system Windows itself uses
+
+If you are on macOS or Linux without these restrictions, the plugin still works and is a convenient quality-of-life addition.
+
 ## Platforms
 
 | Platform | Notification | Custom icon | Sound | Extra install required? |
