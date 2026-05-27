@@ -16,6 +16,7 @@
 set -u
 
 AGENT_NAME="${CLAUDE_PLUGIN_OPTION_AGENT_NAME:-Agent}"
+SESSION_LABEL="${CLAUDE_PLUGIN_OPTION_SESSION_LABEL:-}"
 ICON_PATH="${CLAUDE_PLUGIN_OPTION_ICON_PATH:-}"
 BEEP_RAW="${CLAUDE_PLUGIN_OPTION_BEEP_ENABLED:-no}"
 
@@ -25,6 +26,30 @@ fi
 
 SOUND_PATH="${CLAUDE_PLUGIN_ROOT}/assets/notify.wav"
 PROJECT_NAME="$(basename "$PWD")"
+
+# Notification title: session label takes priority over agent name.
+NOTIFY_TITLE="${SESSION_LABEL:-$AGENT_NAME}"
+
+# Compute elapsed time from session-start.sh timestamp.
+NOTIFY_DURATION=""
+SESSION_ID="${CLAUDE_CODE_SESSION_ID:-}"
+if [ -n "$SESSION_ID" ]; then
+    START_FILE="/tmp/agent-toast-${SESSION_ID}.start"
+    if [ -f "$START_FILE" ]; then
+        START_TS="$(cat "$START_FILE" 2>/dev/null)"
+        if [ -n "$START_TS" ]; then
+            ELAPSED=$(( $(date +%s) - START_TS ))
+            MINS=$(( ELAPSED / 60 ))
+            SECS=$(( ELAPSED % 60 ))
+            if [ "$MINS" -gt 0 ]; then
+                NOTIFY_DURATION="${MINS}m ${SECS}s"
+            else
+                NOTIFY_DURATION="${SECS}s"
+            fi
+        fi
+        rm -f "$START_FILE"
+    fi
+fi
 
 case "$(echo "$BEEP_RAW" | tr '[:upper:]' '[:lower:]')" in
     yes|y|true|1|on) BEEP=1 ;;
@@ -49,13 +74,11 @@ OS="$(detect_os)"
 ###############################################################################
 # Windows / WSL
 #
-# Uses Microsoft.WindowsTerminal_8wekyb3d8bbwe!App as the AppUserModelId so
-# clicking the toast brings the correct Windows Terminal window to the
-# foreground. Windows handles window selection automatically: when there is
-# one WT window it focuses it directly; when there are multiple it shows the
-# taskbar thumbnail picker. ToastGeneric is used because a real registered
-# AppId is now available, giving richer layout and a proper logo override.
-# Falls back to the legacy ToastImageAndText02 approach if WT is not found.
+# Uses ToastImageAndText04 (1 image + 3 text fields: title, body1, body2).
+# Fake AppId avoids triggering Windows Terminal launch on click.
+# Line 1: session label or agent name
+# Line 2: project name
+# Line 3: duration (filled in later when session-start tracking is wired up)
 ###############################################################################
 notify_wsl() {
     local icon_win icon_uri="" sound_win=""
@@ -71,9 +94,10 @@ notify_wsl() {
         sound_win="$(wslpath -w "$SOUND_PATH" 2>/dev/null)" || sound_win=""
     fi
 
-    WSLENV="${WSLENV:-}:ASTRO_AGENT_NAME:ASTRO_PROJECT_NAME:ASTRO_ICON_URI:ASTRO_SOUND_WIN:ASTRO_BEEP" \
-      ASTRO_AGENT_NAME="$AGENT_NAME" \
-      ASTRO_PROJECT_NAME="$PROJECT_NAME" \
+    WSLENV="${WSLENV:-}:ASTRO_TITLE:ASTRO_LINE2:ASTRO_LINE3:ASTRO_ICON_URI:ASTRO_SOUND_WIN:ASTRO_BEEP" \
+      ASTRO_TITLE="$NOTIFY_TITLE" \
+      ASTRO_LINE2="$PROJECT_NAME" \
+      ASTRO_LINE3="$NOTIFY_DURATION" \
       ASTRO_ICON_URI="$icon_uri" \
       ASTRO_SOUND_WIN="$sound_win" \
       ASTRO_BEEP="$BEEP" \
@@ -90,48 +114,23 @@ if ($env:ASTRO_BEEP -eq '1' -and $env:ASTRO_SOUND_WIN) {
 [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime]
 [void][Windows.Data.Xml.Dom.XmlDocument,                  Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime]
 
-$title  = $env:ASTRO_AGENT_NAME
-$body   = if ($env:ASTRO_PROJECT_NAME) { "$($env:ASTRO_PROJECT_NAME) - Task complete" } else { 'Task complete' }
-$iconXml = if ($env:ASTRO_ICON_URI) {
-    "<image placement=""appLogoOverride"" src=""$($env:ASTRO_ICON_URI)"" hint-crop=""circle""/>"
-} else { '' }
+# ToastImageAndText04: image + title + 2 body lines. Fake AppId keeps
+# notification-only behavior (no WT launch on click).
+$tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
+    [Windows.UI.Notifications.ToastTemplateType]::ToastImageAndText04)
 
-# Windows Terminal AppUserModelId — clicking the toast activates WT directly,
-# focusing the window that generated the notification.
-$wtAppId = 'Microsoft.WindowsTerminal_8wekyb3d8bbwe!App'
-$notifier = $null
-$useGeneric = $false
-try {
-    $notifier  = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($wtAppId)
-    $useGeneric = $true
-} catch {
-    $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(
-        [char]0xD83D + [char]0xDD14 + ' Notification')
+if ($env:ASTRO_ICON_URI) {
+    $tpl.GetElementsByTagName('image').Item(0).Attributes.GetNamedItem('src').NodeValue = $env:ASTRO_ICON_URI
 }
 
-if ($useGeneric) {
-    $xml = "<toast><visual><binding template=""ToastGeneric""><text>$title</text><text>$body</text>$iconXml</binding></visual></toast>"
-    $doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
-    try {
-        $doc.LoadXml($xml)
-        $notifier.Show([Windows.UI.Notifications.ToastNotification]::new($doc))
-    } catch {
-        $useGeneric = $false
-    }
-}
+$nodes = $tpl.GetElementsByTagName('text')
+[void]$nodes.Item(0).AppendChild($tpl.CreateTextNode($env:ASTRO_TITLE))
+[void]$nodes.Item(1).AppendChild($tpl.CreateTextNode($env:ASTRO_LINE2))
+[void]$nodes.Item(2).AppendChild($tpl.CreateTextNode($env:ASTRO_LINE3))
 
-if (-not $useGeneric) {
-    # Legacy fallback: ToastImageAndText02 works with any AppId.
-    $tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
-        [Windows.UI.Notifications.ToastTemplateType]::ToastImageAndText02)
-    if ($env:ASTRO_ICON_URI) {
-        $tpl.GetElementsByTagName('image').Item(0).Attributes.GetNamedItem('src').NodeValue = $env:ASTRO_ICON_URI
-    }
-    $nodes = $tpl.GetElementsByTagName('text')
-    [void]$nodes.Item(0).AppendChild($tpl.CreateTextNode($title))
-    [void]$nodes.Item(1).AppendChild($tpl.CreateTextNode($body))
-    $notifier.Show([Windows.UI.Notifications.ToastNotification]::new($tpl))
-}
+$toast = [Windows.UI.Notifications.ToastNotification]::new($tpl)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(
+    [char]0xD83D + [char]0xDD14 + ' Notification').Show($toast)
 PS_EOF
 }
 
@@ -154,17 +153,20 @@ notify_macos() {
         terminal_bundle="com.apple.Terminal"
     fi
 
+    local msg="Task complete"
+    [ -n "$NOTIFY_DURATION" ] && msg="Task complete - ${NOTIFY_DURATION}"
+
     if command -v terminal-notifier >/dev/null 2>&1; then
         local args=(
-            -title  "$AGENT_NAME"
+            -title    "$NOTIFY_TITLE"
             -subtitle "$PROJECT_NAME"
-            -message "Task complete"
+            -message  "$msg"
             -contentImage "$ICON_PATH"
         )
         [ -n "$terminal_bundle" ] && args+=(-activate "$terminal_bundle")
         terminal-notifier "${args[@]}" >/dev/null 2>&1 || true
     else
-        osascript -e "display notification \"Task complete\" with title \"$AGENT_NAME\" subtitle \"$PROJECT_NAME\"" \
+        osascript -e "display notification \"$msg\" with title \"$NOTIFY_TITLE\" subtitle \"$PROJECT_NAME\"" \
             >/dev/null 2>&1 || true
     fi
 
@@ -177,8 +179,11 @@ notify_macos() {
 # Linux — notify-send + audio
 ###############################################################################
 notify_linux() {
+    local body="$PROJECT_NAME - Task complete"
+    [ -n "$NOTIFY_DURATION" ] && body="$PROJECT_NAME - Task complete (${NOTIFY_DURATION})"
+
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -i "$ICON_PATH" "$AGENT_NAME" "$PROJECT_NAME - Task complete" \
+        notify-send -i "$ICON_PATH" "$NOTIFY_TITLE" "$body" \
             >/dev/null 2>&1 || true
     fi
     if [ "$BEEP" -eq 1 ] && [ -f "$SOUND_PATH" ]; then

@@ -14,6 +14,12 @@
       "description": "Toast title shown on every notification. Example: \"Astro Agent\", \"Khanh Bot\".",
       "default": "Astro Agent"
     },
+    "session_label": {
+      "type": "string",
+      "title": "Session label (optional)",
+      "description": "Short label to identify this window when running multiple agents at once. Example: \"frontend\", \"api\", \"infra\". Replaces the agent name in the notification title. Leave blank to use the agent name.",
+      "default": ""
+    },
     "icon_path": {
       "type": "file",
       "title": "Custom icon (PNG only)",
