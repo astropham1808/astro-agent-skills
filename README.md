@@ -6,26 +6,50 @@ A small Claude Code plugin marketplace. Currently ships one plugin; more may fol
 
 | Plugin | What it does |
 |---|---|
-| [`agent-toast`](./plugins/agent-toast/) | Pops a Windows toast (no PowerShell module, ThreatLocker-safe) when Claude finishes a turn. Configurable agent name, icon, optional beep. |
+| [`agent-toast`](./plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Works on Windows (WinRT toast), macOS (`terminal-notifier` or AppleScript), and Linux (`notify-send`). Configurable agent name, icon, optional sound. |
 
 ## Install
 
 ```
-/plugin marketplace add <git-url-or-local-path>
+/plugin marketplace add https://github.com/astropham1808/astro-agent-skills
 /plugin install agent-toast@astro-agent-skills
 ```
 
-For local testing while developing:
+After install, Claude Code prompts for three settings (agent name / icon path / beep on/off). Re-open the form anytime via `/plugin config agent-toast`.
+
+## Requirements by platform
+
+### macOS
 
 ```
-/plugin marketplace add /mnt/d/astro-agent-skills
-/plugin install agent-toast@astro-agent-skills
+brew install terminal-notifier
 ```
 
-After install, Claude Code prompts for the plugin's three settings (agent name / icon path / beep on/off). Re-open the form anytime via `/plugin config agent-toast`.
+`terminal-notifier` enables the custom icon. Without it the plugin falls back to `osascript` (notification works, no icon). First time the hook fires, macOS may prompt you to allow notifications — accept once.
 
-## Requirements
+### Windows (WSL)
 
-- Windows 10 or 11 (toast renders via WinRT)
+- Windows 10 or 11
 - WSL with `wslpath` and `powershell.exe` reachable
 - No PowerShell modules needed
+
+### Linux
+
+Most desktop distros include these by default. Install if missing:
+
+```bash
+# Debian/Ubuntu
+sudo apt install libnotify-bin pulseaudio-utils
+
+# Fedora
+sudo dnf install libnotify pulseaudio-utils
+```
+
+Headless servers (no GUI) silently skip — there is nowhere to display a notification.
+
+## Local development
+
+```
+/plugin marketplace add /path/to/astro-agent-skills
+/plugin install agent-toast@astro-agent-skills
+```
