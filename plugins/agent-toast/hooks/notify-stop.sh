@@ -116,8 +116,7 @@ if ($env:ASTRO_BEEP -eq '1' -and $env:ASTRO_SOUND_WIN) {
 
 # ToastImageAndText04: image + title + 2 body lines. Fake AppId keeps
 # notification-only behavior (no WT launch on click).
-$tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
-    [Windows.UI.Notifications.ToastTemplateType]::ToastImageAndText04)
+$tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastImageAndText04)
 
 if ($env:ASTRO_ICON_URI) {
     $tpl.GetElementsByTagName('image').Item(0).Attributes.GetNamedItem('src').NodeValue = $env:ASTRO_ICON_URI
@@ -129,8 +128,7 @@ $nodes = $tpl.GetElementsByTagName('text')
 [void]$nodes.Item(2).AppendChild($tpl.CreateTextNode($env:ASTRO_LINE3))
 
 $toast = [Windows.UI.Notifications.ToastNotification]::new($tpl)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(
-    [char]0xD83D + [char]0xDD14 + ' Notification').Show($toast)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier([char]0xD83D + [char]0xDD14 + ' Notification').Show($toast)
 PS_EOF
 }
 
