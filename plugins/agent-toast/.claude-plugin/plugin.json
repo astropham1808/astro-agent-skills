@@ -1,6 +1,6 @@
 {
   "name": "agent-toast",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Cross-platform desktop notification (Windows/macOS/Linux) when Claude Code finishes a turn. Windows path is ThreatLocker-safe (inline PowerShell). Configurable agent name, icon, optional sound.",
   "author": {
     "name": "Khanh Pham"
@@ -13,6 +13,12 @@
       "title": "Agent name",
       "description": "Toast title shown on every notification. Example: \"Astro Agent\", \"Khanh Bot\".",
       "default": "Astro Agent"
+    },
+    "session_label": {
+      "type": "string",
+      "title": "Session label (optional)",
+      "description": "Short label to identify this window when running multiple agents at once. Example: \"frontend\", \"api\", \"infra\". Replaces the agent name in the notification title. Leave blank to use the agent name.",
+      "default": ""
     },
     "icon_path": {
       "type": "file",
