@@ -1,13 +1,24 @@
 {
   "name": "astro-agent-skills",
+  "id": "astro-agent-skills",
   "owner": {
     "name": "Khanh Pham"
+  },
+  "metadata": {
+    "description": "Claude Code plugins by Astro — desktop notifications and productivity hooks",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "agent-toast",
       "source": "./plugins/agent-toast",
-      "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep."
+      "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep.",
+      "version": "0.3.2",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": ["hook", "notification", "toast", "windows", "wsl"],
+      "category": "workflow"
     }
   ]
 }
