@@ -1,11 +1,16 @@
 {
+  "_comment": "Merge into .claude/settings.json. The cheap check only: format the file that was just touched, print nothing, always exit 0. Hook stdout is injected into the agent's context, so a chatty hook on every edit costs tokens on every edit. The tool input arrives on stdin as JSON, not in an env var. Add a case arm per language you actually have a formatter for; anything without one is covered at commit instead.",
   "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{
-        "type": "command",
-        "command": "f=\"$CLAUDE_FILE_PATH\"; case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null;; *.ts|*.tsx) npx prettier -w \"$f\" >/dev/null 2>&1;; esac; exit 0"
-      }]
-    }]
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null;; esac; exit 0"
+          }
+        ]
+      }
+    ]
   }
 }

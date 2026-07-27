@@ -1,4 +1,36 @@
 #!/usr/bin/env bash
+# The expensive checks, at a sparse boundary (commit), not on every edit.
+#
+# Install into the COMMON dir, which every worktree of the repository shares, so
+# berths inherit it instead of each needing a copy of their own:
+#
+#   hooks="$(git rev-parse --git-common-dir)/hooks"
+#   cp assets/pre-commit "$hooks/pre-commit" && chmod +x "$hooks/pre-commit"
+#
+# In a linked worktree `.git` is a FILE, not a directory, so the usual
+# `cp ... .git/hooks/` form fails there.
 set -e
-cargo clippy -q --all-targets -- -D warnings
-cargo test -q
+
+# Resolve any path you need BEFORE the unset below: unsetting GIT_DIR is what
+# makes the rest of this script see the working tree it was called from.
+ROOT="$(git rev-parse --show-toplevel)"
+
+# git exports GIT_DIR and friends into its hooks, and every git spawned by the
+# commands below inherits them. If the test suite builds throwaway repositories,
+# they inherit it too, and a `git init` inside a fixture then reconfigures the
+# REAL repository. That is not theoretical: on 2026-07-27 it flipped a live
+# repository to core.bare = true and killed every worktree on it. Unset here,
+# once, for everything this hook runs.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+      GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
+
+cd "$ROOT"
+
+# --- edit per stack ----------------------------------------------------------
+# Lint with warnings as errors, plus the tests. Keep it to seconds, not minutes:
+# this runs on every commit every agent makes, in every berth.
+
+# cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+# cargo test --manifest-path src-tauri/Cargo.toml
+# pnpm lint
+# pnpm test

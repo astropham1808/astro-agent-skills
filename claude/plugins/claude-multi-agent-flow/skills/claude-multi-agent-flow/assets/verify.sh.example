@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# verify.sh - the ONLY definition of done for a story. Exit 0 = done.
+#
+# Copy to the path named by VERIFY in .agentflow.conf and edit the body for your
+# stack. Two properties matter more than which commands you pick:
+#
+#   1. It mirrors the commands a developer already runs, so CI, a human, and an
+#      agent all get the same answer. A gate nobody can reproduce locally is not
+#      a gate.
+#   2. `set -e` and a real exit code. Everything downstream - story.sh step 4,
+#      land.sh's re-verify after rebase, board.sh's "ready" phase - reads this
+#      exit code and nothing else.
+#
+# The example below is a Tauri app: Rust under src-tauri/, TypeScript at the
+# root. Hence --manifest-path on every cargo call.
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+CARGO="src-tauri/Cargo.toml"
+
+cargo fmt --check --all --manifest-path "$CARGO"
+cargo clippy --manifest-path "$CARGO" --all-targets -- -D warnings
+cargo test --manifest-path "$CARGO"
+
+pnpm typecheck
+pnpm lint
+pnpm test
+
+# board.sh greps this line to decide a story is ready. Keep it.
+echo "VERIFY PASSED $(git rev-parse --short HEAD)"

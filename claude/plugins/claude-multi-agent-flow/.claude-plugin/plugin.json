@@ -1,11 +1,18 @@
 {
   "name": "claude-multi-agent-flow",
   "version": "0.1.0",
-  "description": "Run a backlog story end-to-end across two agents: Claude Code builds, Codex CLI reviews, a human merges. Worktree isolation, spec-first fetch-once, machine-checkable Done-when criteria, and hook discipline by cost boundary.",
+  "description": "Parallel backlog stories, one git worktree (berth) per story. Claude Code builds, Codex CLI reviews read-only, a human merges. Ships berth bootstrap, risk-routed review, exclusive-resource locks, a WIP cap, a serialised landing queue, and a board derived from git rather than agent self-reports.",
   "author": {
     "name": "Khanh Pham"
   },
   "license": "MIT",
-  "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"],
+  "keywords": [
+    "workflow",
+    "worktree",
+    "multi-agent",
+    "codex",
+    "review",
+    "backlog"
+  ],
   "category": "workflow"
 }

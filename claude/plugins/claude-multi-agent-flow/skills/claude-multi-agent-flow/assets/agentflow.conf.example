@@ -1,0 +1,83 @@
+# .agentflow.conf - the only file in the flow that knows about your project.
+# Copy to the repository root. Every script in scripts/ sources it and reads
+# nothing else project-specific.
+
+# --- identity ----------------------------------------------------------------
+
+# Story id prefix. af_story_of pulls "<PREFIX><digits>" back out of a branch
+# name, so this is also what makes a berth findable from git alone.
+PREFIX="AL-"
+
+# Where story specs come from: a Notion collection URL, a Jira JQL, a path to a
+# local backlog file. story.sh interpolates it into the spec prompt and the
+# agent queries it exactly once per story.
+#
+# An identifier is not a credential, but it does name an internal resource.
+# Do not put a private workspace id in a public repository.
+SOT="collection://REPLACE-ME"
+
+BASE="main"
+
+# --- naming ------------------------------------------------------------------
+# Placeholders: {id} {owner} {repo} {base}.
+
+# The owner is the agent accountable for the story, so `git branch` answers
+# "who is holding what" without opening anything.
+BRANCH_PATTERN='{owner}/{id}'
+
+# Siblings of the repository, not nested inside it. A worktree under the working
+# tree shows up in anything that watches the repo for file events, and a berth's
+# build output then arrives as changes to the repository you are looking at.
+WORKTREE_PATTERN='../{repo}-{id}'
+
+# --- the definition of done --------------------------------------------------
+
+# Path, relative to the repository root, of the one script whose exit code
+# decides whether a story is done. Start from assets/verify.sh.example.
+VERIFY="scripts/verify.sh"
+
+# --- parallelism -------------------------------------------------------------
+
+# How many berths may be open at once. Set it from what the machine will take,
+# not from ambition: each berth is a cold build tree of its own, and the
+# pre-commit hook runs the full test suite in each.
+WIP_CAP=3
+
+# Things exactly one story may use at a time. Nothing enforces these at the
+# filesystem level: the lock is how a collision is found before it happens
+# rather than at merge. A "a+b" pair is one resource, because the two files
+# have to change together.
+EXCLUSIVE=(
+  # A fixed dev-server port, when the config makes the second run die rather
+  # than fall back to another port.
+  # "port-1420"
+
+  # Generated or single-source-of-truth files two stories always fight over.
+  # "src/styles/tokens.css"
+  # "src/strings.ts"
+
+  # A type and its mirror in another language: changing one alone compiles on
+  # both sides and fails at the boundary at runtime.
+  # "src-tauri/src/git/model.rs+src/ipc/types.ts"
+)
+
+# Paths where a plausible-looking wrong answer is expensive and quiet. A diff
+# touching any of these is routed to DEEP_REVIEW_PROFILE instead of
+# REVIEW_PROFILE. Size picks the builder; risk picks the reviewer.
+RISKY_PATHS=(
+  # "src/auth/"
+  # "src-tauri/src/git/"
+)
+
+# --- agent profiles ----------------------------------------------------------
+# Codex v0.134+ is one file per profile at $CODEX_HOME/<name>.config.toml, NOT
+# [profiles.x] blocks in config.toml. Both reviewers must be
+# sandbox_mode = "read-only", so "do not edit" is enforced and not requested.
+#
+#   printf 'sandbox_mode = "read-only"\n' > ~/.codex/review.config.toml
+#   printf 'model = "gpt-5-codex"\nmodel_reasoning_effort = "high"\nsandbox_mode = "read-only"\n' > ~/.codex/deepreview.config.toml
+#   printf 'sandbox_mode = "workspace-write"\napproval_policy = "on-request"\n' > ~/.codex/mech.config.toml
+
+REVIEW_PROFILE="review"
+DEEP_REVIEW_PROFILE="deepreview"
+MECH_PROFILE="mech"
