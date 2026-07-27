@@ -1,0 +1,4 @@
+interface:
+  display_name: "Close Story Worktree"
+  short_description: "Safely close merged story worktrees"
+  default_prompt: "Use $close-story-worktree to verify a merged story PR and safely clean its local worktree and branch."
