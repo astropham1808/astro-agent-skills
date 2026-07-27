@@ -6,7 +6,7 @@ A collection of reusable Codex skills and Claude Code plugins.
 
 | Skill | What it does |
 |---|---|
-| [`project-setup`](./skills/project-setup/) | Classifies, plans, scans, and bootstraps greenfield or existing software products. Supports web, SaaS, desktop, mobile, API, CLI, SDK, developer-tool, data, AI, browser-extension, and hybrid projects. |
+| [`project-setup`](./codex/skills/project-setup/) | Classifies, plans, scans, and bootstraps greenfield or existing software products. Supports web, SaaS, desktop, mobile, API, CLI, SDK, developer-tool, data, AI, browser-extension, and hybrid projects. |
 
 ### Install a Codex skill
 
@@ -14,14 +14,14 @@ Ask Codex:
 
 ```text
 Use $skill-installer to install project-setup from
-https://github.com/astropham1808/astro-agent-skills/tree/develop/skills/project-setup
+https://github.com/astropham1808/astro-agent-skills/tree/develop/codex/skills/project-setup
 ```
 
 ## Claude Code plugins
 
 | Plugin | What it does |
 |---|---|
-| [`agent-toast`](./plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Built for WSL users in restricted environments where Claude Desktop is blocked by policy or endpoint security (ThreatLocker-safe: no `.ps1` file, no modules). Also works on macOS and Linux. |
+| [`agent-toast`](./claude/plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Built for WSL users in restricted environments where Claude Desktop is blocked by policy or endpoint security (ThreatLocker-safe: no `.ps1` file, no modules). Also works on macOS and Linux. |
 
 ### Install a Claude Code plugin
 
@@ -30,7 +30,19 @@ https://github.com/astropham1808/astro-agent-skills/tree/develop/skills/project-
 /plugin install agent-toast@astro-agent-skills
 ```
 
-After install, Claude Code prompts for three settings (agent name / icon path / beep on/off). Re-open the form anytime via `/plugin config agent-toast`.
+After install, Claude Code prompts for three settings (agent name / icon path / beep on/off). Reopen the form anytime via `/plugin config agent-toast`.
+
+## Repository layout
+
+```text
+codex/skills/       Codex skills
+claude/plugins/     Claude Code plugins and their bundled skills
+.claude-plugin/     Claude Code marketplace catalog
+```
+
+Codex and Claude can both use `SKILL.md`, so the platform directory is the
+authoritative signal. A Claude skill belongs under
+`claude/plugins/<plugin>/skills/<skill>/`.
 
 ## Requirements by platform
 
@@ -40,7 +52,7 @@ After install, Claude Code prompts for three settings (agent name / icon path / 
 brew install terminal-notifier
 ```
 
-`terminal-notifier` enables the custom icon. Without it the plugin falls back to `osascript` (notification works, no icon). First time the hook fires, macOS may prompt you to allow notifications — accept once.
+`terminal-notifier` enables the custom icon. Without it the plugin falls back to `osascript` (notification works, no icon). The first time the hook fires, macOS may prompt you to allow notifications. Accept once.
 
 ### Windows (WSL)
 
@@ -60,7 +72,7 @@ sudo apt install libnotify-bin pulseaudio-utils
 sudo dnf install libnotify pulseaudio-utils
 ```
 
-Headless servers (no GUI) silently skip — there is nowhere to display a notification.
+Headless servers (no GUI) silently skip because there is nowhere to display a notification.
 
 ## Local development
 
