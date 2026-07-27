@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Setup"
+  short_description: "Plan and bootstrap software products"
+  default_prompt: "Use $project-setup to classify and set up this software product."
