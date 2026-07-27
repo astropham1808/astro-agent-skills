@@ -1,6 +1,6 @@
 ---
 name: claude-multi-agent-flow
-description: Run backlog stories in parallel across several agents, one worktree ("berth") each, with Claude Code building, Codex CLI reviewing read-only, and a human merging. Covers berth bootstrap, spec-first fetch-once, risk-routed review, exclusive-resource locks, a WIP cap, a serialised landing queue, and a board derived from git rather than from agent self-reports. Use this skill whenever the user starts, resumes, reviews, lands, or verifies a backlog story (AL-xxx, HB-xxx, or any PREFIX-nnn ID), asks to "bắt đầu task", "start a story", "open a berth", "what is in flight", "hand off to Codex", "review this branch", "land this", or "verify done". Also use when setting up a multi-agent development workflow on a new project, splitting work between Claude Code and Codex, or making an agent pipeline observable and verifiable.
+description: Run backlog stories in parallel across several agents, one worktree ("berth") each, with Claude Code building, Codex CLI reviewing read-only, and a human merging. Covers berth bootstrap, spec-first fetch-once, risk-routed review, exclusive-resource locks, a WIP cap, a serialised landing queue, a board derived from git rather than from agent self-reports, and a merge-gated close that retires the berth. Use this skill whenever the user starts, resumes, reviews, lands, verifies, or closes a backlog story (AL-xxx, HB-xxx, or any PREFIX-nnn ID), asks to "bắt đầu task", "start a story", "open a berth", "what is in flight", "hand off to Codex", "review this branch", "land this", "verify done", "the PR is merged", "clean up the worktree", or "close the story". Also use when setting up a multi-agent development workflow on a new project, splitting work between Claude Code and Codex, or making an agent pipeline observable and verifiable.
 ---
 
 # Claude multi-agent story flow
@@ -72,10 +72,11 @@ rather than requested in a prompt.
 ## The loop
 
 ```bash
-scripts/new-story.sh AL-161 claude   # berth from fresh origin/main
-scripts/story.sh     AL-161          # spec -> build -> review -> fix -> verify
-scripts/board.sh                     # what is in flight, any time
-scripts/land.sh      AL-161          # rebase -> re-verify -> PR. Human merges.
+scripts/new-story.sh   AL-161 claude   # berth from fresh origin/main
+scripts/story.sh       AL-161          # spec -> build -> review -> fix -> verify
+scripts/board.sh                       # what is in flight, any time
+scripts/land.sh        AL-161          # rebase -> re-verify -> PR. Human merges.
+scripts/close-story.sh AL-161 --apply  # after the merge: retire the berth
 ```
 
 | Script | What it is for |
@@ -85,6 +86,7 @@ scripts/land.sh      AL-161          # rebase -> re-verify -> PR. Human merges.
 | `board.sh` | One line per story: phase, commits behind base, cost so far, locks held. Also lists files two in-flight branches both changed, which is the conflict nobody declared in advance. |
 | `claim.sh` | `list` / `take` / `release` / `drop`. Locks are directories in the shared common dir, because `mkdir` is atomic. |
 | `land.sh <ID>` | Serialised on one lock: rebase onto fresh base, mandatory re-verify, push, open the PR. Never merges. |
+| `close-story.sh <ID> [--apply]` | After the human merged: verify the PR really is merged, remove the berth, delete the local branch, release the story's locks. Previews unless `--apply`. |
 | `agentflow-lib.sh` | Sourced by the rest. Config, berth resolution, locks, routing. Not run directly. |
 
 S-size stories can invert: a human or Claude writes the spec, then
@@ -191,8 +193,32 @@ repeatable.
 
 ## On close
 
-Write `notes/<ID>.md`: what was done, decisions taken, open questions. After the
-human merges, `scripts/claim.sh drop <ID>` and `git worktree remove <berth>`.
+Write `notes/<ID>.md` before the berth goes away: what was done, decisions
+taken, open questions. Then, once the human has merged:
+
+```bash
+scripts/close-story.sh AL-161            # preview every check and target
+scripts/close-story.sh AL-161 --apply
+```
+
+Closing is the only step that deletes anything, so every check is a reason to
+stop rather than something to work around. It refuses unless GitHub says the
+PR for *this* berth's branch has `mergedAt` set, and it never resets, cleans,
+stashes, or forces a berth into looking clean.
+
+Two cases are worth knowing:
+
+- **Squash and rebase merges** rewrite the commits, so the branch tip is not an
+  ancestor of the base and `git branch -d` refuses it. That is expected. The
+  script accepts it and uses `-D`, but only after confirming the tip is also at
+  `origin/<branch>`, so the commits survive somewhere other than the berth being
+  deleted. If it was never pushed, it stops.
+- **The locks come last,** after the worktree is actually gone. A removal that
+  fails must not hand `port-1420` to the next story while this one is still on
+  disk holding it.
+
+The remote branch is kept. `board.sh` shows the freed berth immediately, since
+the WIP count is `git worktree list`, not a counter anybody maintains.
 
 ## Files
 
@@ -202,6 +228,7 @@ human merges, `scripts/claim.sh drop <ID>` and `git worktree remove <berth>`.
 - `scripts/board.sh` - what is in flight, derived from git and artifacts
 - `scripts/claim.sh` - exclusive-resource locks
 - `scripts/land.sh` - serialised rebase, re-verify, PR
+- `scripts/close-story.sh` - retire a merged berth, previews by default
 - `assets/agentflow.conf.example` - the only project-specific file
 - `assets/verify.sh.example` - the single definition of done, edit per stack
 - `assets/spec-template.md` - spec shape with machine-readable Done-when

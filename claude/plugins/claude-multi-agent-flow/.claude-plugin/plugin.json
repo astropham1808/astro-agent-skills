@@ -1,7 +1,7 @@
 {
   "name": "claude-multi-agent-flow",
   "version": "0.1.0",
-  "description": "Parallel backlog stories, one git worktree (berth) per story. Claude Code builds, Codex CLI reviews read-only, a human merges. Ships berth bootstrap, risk-routed review, exclusive-resource locks, a WIP cap, a serialised landing queue, and a board derived from git rather than agent self-reports.",
+  "description": "Parallel backlog stories, one git worktree (berth) per story. Claude Code builds, Codex CLI reviews read-only, a human merges. Ships berth bootstrap, risk-routed review, exclusive-resource locks, a WIP cap, a serialised landing queue, a merge-gated close, and a board derived from git rather than agent self-reports.",
   "author": {
     "name": "Khanh Pham"
   },
