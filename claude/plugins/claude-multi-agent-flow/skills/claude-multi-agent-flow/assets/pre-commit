@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+cargo clippy -q --all-targets -- -D warnings
+cargo test -q

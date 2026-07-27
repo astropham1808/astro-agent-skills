@@ -23,13 +23,17 @@ https://github.com/astropham1808/astro-agent-skills/tree/develop/codex/skills/pr
 | Plugin | What it does |
 |---|---|
 | [`agent-toast`](./claude/plugins/agent-toast/) | Desktop notification when Claude finishes a turn. Built for WSL users in restricted environments where Claude Desktop is blocked by policy or endpoint security (ThreatLocker-safe: no `.ps1` file, no modules). Also works on macOS and Linux. |
+| [`claude-multi-agent-flow`](./claude/plugins/claude-multi-agent-flow/) | Runs a backlog story end-to-end across two agents: Claude Code builds, Codex CLI reviews, a human merges. Worktree isolation, spec-first fetch-once, machine-checkable Done-when criteria, and hook discipline by cost boundary. |
 
 ### Install a Claude Code plugin
 
 ```
 /plugin marketplace add https://github.com/astropham1808/astro-agent-skills
 /plugin install agent-toast@astro-agent-skills
+/plugin install claude-multi-agent-flow@astro-agent-skills
 ```
+
+Pull later changes with `/plugin marketplace update astro-agent-skills`.
 
 After install, Claude Code prompts for three settings (agent name / icon path / beep on/off). Reopen the form anytime via `/plugin config agent-toast`.
 

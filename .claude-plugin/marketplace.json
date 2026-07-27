@@ -18,6 +18,17 @@
       },
       "keywords": ["hook", "notification", "toast", "windows", "wsl"],
       "category": "workflow"
+    },
+    {
+      "name": "claude-multi-agent-flow",
+      "source": "./claude/plugins/claude-multi-agent-flow",
+      "description": "Story flow across two agents: Claude Code builds, Codex CLI reviews, a human merges. Worktree isolation, spec-first fetch-once, machine-checkable Done-when, hook discipline by cost boundary.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"],
+      "category": "workflow"
     }
   ]
 }

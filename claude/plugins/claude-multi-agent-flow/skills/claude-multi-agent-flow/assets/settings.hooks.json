@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "hooks": [{
+        "type": "command",
+        "command": "f=\"$CLAUDE_FILE_PATH\"; case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null;; *.ts|*.tsx) npx prettier -w \"$f\" >/dev/null 2>&1;; esac; exit 0"
+      }]
+    }]
+  }
+}
