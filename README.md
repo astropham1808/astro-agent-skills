@@ -6,6 +6,7 @@ A collection of reusable Codex skills and Claude Code plugins.
 
 | Skill | What it does |
 |---|---|
+| [`close-story-worktree`](./codex/skills/close-story-worktree/) | Verifies that a story PR was merged, then safely removes its clean local worktree and merged branch. |
 | [`project-setup`](./codex/skills/project-setup/) | Classifies, plans, scans, and bootstraps greenfield or existing software products. Supports web, SaaS, desktop, mobile, API, CLI, SDK, developer-tool, data, AI, browser-extension, and hybrid projects. |
 
 ### Install a Codex skill
