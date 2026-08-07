@@ -8,8 +8,7 @@ description: Run a story end-to-end using Claude Code as builder and Codex CLI a
 Claude Code = builder (plan, M/L stories, multi-file, debug). Codex CLI = reviewer +
 mechanical executor (diff review, S stories, scaffolding). Human = merge gate.
 
-Rationale: Claude Code has higher first-pass accuracy (rework is what actually burns
-quota); Codex is 2-3x more token-efficient on narrow, well-specified scope.
+This role split is a workflow default, not a quality or cost guarantee. Select the builder and reviewer based on story scope, available tooling, verification strength, and the repository's own constraints.
 
 ## Non-negotiable rules
 
@@ -117,10 +116,7 @@ enforce at a *sparse* boundary (commit/PR), not a dense one (edit).
 ## Done-when must be machine-readable
 
 In `specs/<ID>.md`, every acceptance criterion is a command, not a sentence.
-"UI looks good" is unverifiable and lets the agent grade its own homework. Use:
-`cargo test <mod>:: → green`, `npx playwright test tests/<ID>.spec.ts → pass`,
-`artifacts/<ID>.png exists`, `scripts/verify.sh → exit 0`. UI claims require a screenshot
-artifact the human looks at.
+"UI looks good" is unverifiable and lets the agent grade its own homework. Use the project's exact commands, for example `<unit-test-command> → green`, `<browser-test-command> → pass`, `artifacts/<ID>.png exists`, and `scripts/verify-project.sh → exit 0`. UI claims require a screenshot artifact the human looks at.
 
 ## Porting to a new project
 
@@ -128,8 +124,8 @@ Everything above is project-agnostic except four values. Change them and the flo
 anywhere:
 
 1. Story ID prefix (`AL-`)
-2. Source-of-truth query (Notion collection URL / Jira JQL)
-3. `verify.sh` body (the stack's lint + test + typecheck commands)
+2. Source-of-truth query (for example a Notion collection URL or Jira JQL)
+3. `verify.sh` / `verify-project.sh` body (the project's lint + test + typecheck commands)
 4. Branch naming (`worktree-<ID>` for Claude, `codex/<ID>` for Codex)
 
 ## Files

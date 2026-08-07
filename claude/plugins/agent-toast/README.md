@@ -39,13 +39,14 @@ If a required tool is missing on a given OS, the hook silently degrades (no noti
 /plugin install agent-toast@astro-agent-skills
 ```
 
-Claude Code prompts for three settings; change later via `/plugin config agent-toast`.
+Claude Code prompts for four settings (agent name, optional session label, icon path, and beep); change them later via `/plugin config agent-toast`.
 
 ## Configuration
 
 | Option | Default | Notes |
 |---|---|---|
 | Agent name | `Astro Agent` | Toast title |
+| Session label | *(blank)* | Optional label used in place of the agent name when several sessions run at once. |
 | Custom icon (PNG only) | *(bundled astronaut)* | Absolute path. Windows-style `C:\path\to\icon.png` or POSIX `/path/to/icon.png`. |
 | Play beep after toast? | `no` | Type `yes` to also play `notify.wav` through the audio device |
 

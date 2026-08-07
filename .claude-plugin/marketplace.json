@@ -4,20 +4,20 @@
     "name": "Khanh Pham"
   },
   "metadata": {
-    "description": "Claude Code plugins by Astro - desktop notifications and productivity hooks",
+    "description": "Claude Code plugins by Astro - agent workflow and platform integrations",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "agent-toast",
       "source": "./claude/plugins/agent-toast",
-      "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep.",
+      "description": "Claude Stop-hook desktop notification integration for Windows/WSL, macOS, and Linux. ThreatLocker-safe Windows path; configurable name, session label, icon, and beep.",
       "version": "0.4.0",
       "author": {
         "name": "Khanh Pham"
       },
       "keywords": ["hook", "notification", "toast", "windows", "wsl"],
-      "category": "workflow"
+      "category": "integration"
     },
     {
       "name": "claude-multi-agent-flow",

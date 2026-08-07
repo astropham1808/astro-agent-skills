@@ -4,7 +4,7 @@
       "matcher": "Edit|Write",
       "hooks": [{
         "type": "command",
-        "command": "f=\"$CLAUDE_FILE_PATH\"; case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null;; *.ts|*.tsx) npx prettier -w \"$f\" >/dev/null 2>&1;; esac; exit 0"
+        "command": "root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; if [ -x \"$root/scripts/format-file.sh\" ]; then \"$root/scripts/format-file.sh\" \"$CLAUDE_FILE_PATH\"; fi; exit 0"
       }]
     }]
   }

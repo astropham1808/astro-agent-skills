@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# verify.sh — the ONLY definition of done. Exit 0 = done. Edit per stack.
-set -e
-cargo fmt --check --all
-cargo clippy -q --all-targets -- -D warnings
-cargo test -q
-npm run typecheck
-npm run test -- --run
-echo "VERIFY PASSED $(git rev-parse --short HEAD)"
+# verify.sh — the ONLY definition of done for a target project.
+# Keep stack-specific commands in the target project's verifier.
+set -euo pipefail
+
+TARGET=${1:-.}
+cd "$TARGET"
+ROOT=$(git rev-parse --show-toplevel)
+
+if [ -x "$ROOT/scripts/verify-project.sh" ]; then
+  exec "$ROOT/scripts/verify-project.sh"
+fi
+
+echo "missing executable project verifier: $ROOT/scripts/verify-project.sh" >&2
+echo "configure the project's lint, typecheck, test, and build checks there" >&2
+exit 2
