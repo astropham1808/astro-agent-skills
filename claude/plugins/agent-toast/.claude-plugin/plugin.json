@@ -1,12 +1,11 @@
 {
   "name": "agent-toast",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Cross-platform desktop notification (Windows/macOS/Linux) when Claude Code finishes a turn. Windows path is ThreatLocker-safe (inline PowerShell). Configurable agent name, session label, icon, and optional sound.",
   "author": {
     "name": "Khanh Pham"
   },
   "license": "MIT",
-  "category": "integration",
   "keywords": ["hook", "notification", "toast", "windows", "wsl"],
   "userConfig": {
     "agent_name": {
@@ -30,7 +29,7 @@
     "beep_enabled": {
       "type": "string",
       "title": "Play beep after toast?",
-      "description": "Type \"yes\" to also play an 800Hz beep through the Windows speaker. Type \"no\" (default) for silent toast only.",
+      "description": "Type \"yes\" to also play the bundled notification sound. Type \"no\" (default) for silent toast only.",
       "default": "no"
     }
   }

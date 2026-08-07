@@ -1,11 +1,10 @@
 {
   "name": "claude-multi-agent-flow",
-  "version": "0.1.0",
-  "description": "Run a backlog story end-to-end across two agents: Claude Code builds, Codex CLI reviews, a human merges. Worktree isolation, spec-first fetch-once, machine-checkable Done-when criteria, and hook discipline by cost boundary.",
+  "version": "0.2.0",
+  "description": "Run a repository story across two agents: Claude Code implements, Codex CLI reviews in a read-only sandbox, and a human owns PR and merge gates. Includes worktree isolation, local or remote spec-first input, project-owned verification, and one bounded fix pass.",
   "author": {
     "name": "Khanh Pham"
   },
   "license": "MIT",
-  "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"],
-  "category": "workflow"
+  "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"]
 }

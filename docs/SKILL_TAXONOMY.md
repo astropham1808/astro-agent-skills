@@ -31,12 +31,12 @@ integration it uses to solve that problem.
 
 | Artifact | Platform | Category | Portability | Coupling assessment | Decision |
 | --- | --- | --- | --- | --- | --- |
-| disciplined-coding (../codex/skills/disciplined-coding/) | Codex | Foundation | Cross-stack | No framework requirement; examples are implementation-neutral. | Keep as the default quality/practice skill. |
-| project-setup (../codex/skills/project-setup/) | Codex | Planning and setup | Cross-stack, repository-aware | Product-type guidance is broad; stack is intentionally discovered rather than assumed. | Keep. |
-| codex-multi-agents-flow (../codex/skills/codex-multi-agents-flow/) | Codex | Delivery orchestration | Codex-native + Git worktree | Provider and worktree mechanics are intentional; verifier fallback is stack-neutral. | Keep as a Codex adapter. |
-| close-story-worktree (../codex/skills/close-story-worktree/) | Codex | Repository lifecycle | GitHub CLI/Git-specific | gh, PR merge state, worktrees, and local branches are the contract. | Keep; do not generalize into a generic coding skill. |
-| claude-multi-agent-flow (../claude/plugins/claude-multi-agent-flow/) | Claude Code | Delivery orchestration | Claude + Codex adapter | Provider boundary is intentional. Rust/Node/Playwright defaults were accidental coupling and are now project-configured. | Keep as a Claude adapter; use project-owned verification and formatting hooks. |
-| agent-toast (../claude/plugins/agent-toast/) | Claude Code | Platform integration | Claude hooks + Windows/macOS/Linux | OS notification commands and Claude hook variables are required by the feature. | Keep as an explicit integration; marketplace category is integration. |
+| [disciplined-coding](../codex/skills/disciplined-coding/) | Codex | Foundation | Cross-stack | No framework requirement; examples are implementation-neutral. | Keep as the default quality/practice skill. |
+| [project-setup](../codex/skills/project-setup/) | Codex | Planning and setup | Cross-stack, repository-aware | Product-type guidance is broad; stack is intentionally discovered rather than assumed. | Keep. |
+| [codex-multi-agents-flow](../codex/skills/codex-multi-agents-flow/) | Codex | Delivery orchestration | Codex-native + Git worktree | Provider and worktree mechanics are intentional; project verification and generic fallback remain stack-neutral. | Keep as a Codex adapter; verify its stage and failure gates hermetically. |
+| [close-story-worktree](../codex/skills/close-story-worktree/) | Codex | Repository lifecycle | GitHub CLI/Git-specific | gh, PR merge state, worktrees, and local branches are the contract. | Keep; do not generalize into a generic coding skill. |
+| [claude-multi-agent-flow](../claude/plugins/claude-multi-agent-flow/) | Claude Code | Delivery orchestration | Claude + Codex + Git worktree | Provider mechanics are intentional. Base branch, source-of-truth query, verifier, and formatter are project-configured. | Keep as a Claude adapter; verify installed paths, stage gates, and human PR ownership hermetically. |
+| [agent-toast](../claude/plugins/agent-toast/) | Claude Code | Platform integration | Claude hooks + Windows/macOS/Linux | OS notification commands and Claude hook variables are required by the feature. | Keep as an explicit integration; use mocked OS commands in CI and live OS canaries before release. |
 
 ## Coupling decisions
 
@@ -57,17 +57,22 @@ integration it uses to solve that problem.
 - The Claude PostToolUse formatter hook no longer assumes rustfmt or Prettier. A
   target project may provide scripts/format-file.sh; otherwise the hook is a safe
   no-op.
+- The Claude story flow no longer requires main or Notion. It resolves a base branch
+  and accepts either a completed local spec or a configured narrow remote query.
+- Story bootstrapping no longer checks out or pulls the primary worktree, and both
+  delivery flows stop before creating a pull request.
 - The Claude flow skill no longer presents provider performance claims as a general
   rule. Builder/reviewer roles are selected by scope, verification, and available
   tooling.
 
 ## Change policy
 
-When adding a skill, record its platform, category, portability, required external
-interfaces, and whether any stack coupling is intentional. A new framework-specific
-skill belongs in Platform integration only when the framework is the actual
-contract; otherwise keep the core workflow generic and isolate the framework in an
-adapter or example.
+When adding or changing a skill, record its trigger and exclusions, platform,
+category, portability, required external interfaces, configurable inputs, external
+side effects, failure behavior, and whether any stack coupling is intentional. A
+new framework-specific skill belongs in Platform integration only when the framework
+is the actual contract; otherwise keep the core workflow generic and isolate the
+framework in an adapter or example.
 
 ## Verification
 
@@ -78,4 +83,10 @@ Classification changes are complete when:
 - stack-specific commands appear only in project-owned configuration or clearly
   labeled examples;
 - JSON parses, changed shell files pass bash -n, links resolve locally, and
-  git diff --check passes.
+  git diff --check passes;
+- bundled paths resolve from an installed skill or plugin rather than the project
+  working directory;
+- hermetic tests cover happy paths and failure gates without calling real agents,
+  issue trackers, notification services, GitHub mutations, or paid APIs;
+- a live canary covers each advertised runtime or operating-system integration
+  before publishing a release.

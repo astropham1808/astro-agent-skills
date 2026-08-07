@@ -66,7 +66,7 @@ The script performs these bounded stages:
 1. Start a fresh Codex implementer session in the story worktree.
 2. Require the implementer to commit the scoped spec, code, and tests, then run the
    verification gate before review.
-3. Start a separate native `codex review --base <branch>` reviewer.
+3. Start a separate `codex exec` reviewer with an explicit read-only sandbox.
 4. Skip the fix pass on `VERDICT: PASS`; otherwise run one fresh fix session and require
    it to commit accepted corrections.
 5. Run final verification and re-review after a fix. Set `REREVIEW=0` only when the
@@ -76,8 +76,9 @@ The script performs these bounded stages:
 
 The implementer uses `codex exec --json` with a workspace-write sandbox and writes
 JSONL traces plus its final message under the ignored `.codex-flow/<ID>/` directory.
-The reviewer uses Codex's dedicated review command, which reviews without modifying the
-working tree.
+The reviewer uses a fresh non-interactive Codex session with
+`sandbox_mode = "read-only"` and `approval_policy = "never"`, so it can
+inspect the requested diff without modifying the working tree.
 
 ## Operate interactively
 

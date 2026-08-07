@@ -4,7 +4,7 @@
       "matcher": "Edit|Write",
       "hooks": [{
         "type": "command",
-        "command": "root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; if [ -x \"$root/scripts/format-file.sh\" ]; then \"$root/scripts/format-file.sh\" \"$CLAUDE_FILE_PATH\"; fi; exit 0"
+        "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/format-file.sh\""
       }]
     }]
   }

@@ -31,7 +31,7 @@ and are available on the next turn.
 | Category | Plugin | Scope |
 |---|---|---|
 | Platform integration | [agent-toast](./claude/plugins/agent-toast/) | Claude lifecycle notifications on Windows/WSL, macOS, and Linux. |
-| Delivery orchestration | [claude-multi-agent-flow](./claude/plugins/claude-multi-agent-flow/) | Claude builder + Codex reviewer workflow with project-configured verification. |
+| Delivery orchestration | [claude-multi-agent-flow](./claude/plugins/claude-multi-agent-flow/) | Claude implementer + read-only Codex reviewer with configurable source, base branch, and project verification. |
 
 ### Install a Claude Code plugin
 
@@ -41,7 +41,8 @@ and are available on the next turn.
 /plugin install claude-multi-agent-flow@astro-agent-skills
 ~~~
 
-Pull later changes with /plugin marketplace update astro-agent-skills.
+Pull later changes with /plugin marketplace update astro-agent-skills, then update
+the installed plugin with /plugin update <plugin>@astro-agent-skills.
 
 agent-toast can be configured with an agent name, optional session label,
 optional PNG icon path, and optional beep. Reopen its settings with
@@ -58,6 +59,8 @@ codex/skills/       Codex skills
 claude/plugins/     Claude Code plugins and their bundled skills
 .claude-plugin/     Claude Code marketplace catalog
 docs/               Taxonomy and repository documentation
+tests/              Hermetic contract and failure-gate tests
+.github/workflows/  Automated verification
 ~~~
 
 Both platforms use SKILL.md as the skill contract. Codex skills live under
@@ -102,11 +105,13 @@ desktop display.
 
 ## Local development
 
-~~~text
-/plugin marketplace add /path/to/astro-agent-skills
-/plugin install agent-toast@astro-agent-skills
+~~~bash
+python tests/test_skill_contracts.py
+claude plugin validate . --strict
 ~~~
 
 Keep each skill self-contained: update its SKILL.md, scripts, assets, and references
-together, then verify any affected shell scripts on the target platform before
-publishing.
+together. The test suite uses temporary Git repositories and mocked Claude, Codex,
+GitHub, and notification commands, so it does not call paid APIs or mutate external
+systems. Run shell behavior tests under WSL or POSIX, then run one live canary on
+every advertised provider or operating-system integration before publishing.

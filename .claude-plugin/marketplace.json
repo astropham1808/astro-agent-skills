@@ -5,14 +5,13 @@
   },
   "metadata": {
     "description": "Claude Code plugins by Astro - agent workflow and platform integrations",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "plugins": [
     {
       "name": "agent-toast",
       "source": "./claude/plugins/agent-toast",
       "description": "Claude Stop-hook desktop notification integration for Windows/WSL, macOS, and Linux. ThreatLocker-safe Windows path; configurable name, session label, icon, and beep.",
-      "version": "0.4.0",
       "author": {
         "name": "Khanh Pham"
       },
@@ -22,8 +21,7 @@
     {
       "name": "claude-multi-agent-flow",
       "source": "./claude/plugins/claude-multi-agent-flow",
-      "description": "Story flow across two agents: Claude Code builds, Codex CLI reviews, a human merges. Worktree isolation, spec-first fetch-once, machine-checkable Done-when, hook discipline by cost boundary.",
-      "version": "0.1.0",
+      "description": "Repository story flow across two agents: Claude Code implements, Codex CLI reviews read-only, and a human owns PR and merge gates. Supports local or remote specs, configurable base branches, and project-owned verification.",
       "author": {
         "name": "Khanh Pham"
       },

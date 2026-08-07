@@ -1,0 +1,36 @@
+name: Verify skills
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run hermetic skill contract tests
+        run: python tests/test_skill_contracts.py
+      - name: Check patch whitespace
+        shell: bash
+        env:
+          PR_BASE_SHA: "${{ github.event.pull_request.base.sha }}"
+          PUSH_BASE_SHA: "${{ github.event.before }}"
+        run: |
+          base="$PR_BASE_SHA"
+          [ -n "$base" ] || base="$PUSH_BASE_SHA"
+          if git cat-file -e "$base^{commit}" 2>/dev/null; then
+            git diff --check "$base"...HEAD
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            git diff --check HEAD^ HEAD
+          else
+            git show --check --format= HEAD
+          fi

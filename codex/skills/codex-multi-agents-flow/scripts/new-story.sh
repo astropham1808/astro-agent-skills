@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ID=${1:?usage: new-story.sh <STORY-ID> [base-branch]}
-BASE=${2:-${BASE_BRANCH:-main}}
+BASE=${2:-${BASE_BRANCH:-}}
 
 if [[ ! "$ID" =~ ^[A-Za-z][A-Za-z0-9_-]*-[0-9]+$ ]]; then
   echo "invalid story ID: $ID" >&2
@@ -16,15 +16,22 @@ for command_name in git mkdir cp grep sed rm; do
   }
 done
 
-if ! git check-ref-format --branch "$BASE" >/dev/null 2>&1; then
-  echo "invalid base branch: $BASE" >&2
-  exit 2
-fi
-
 ROOT=$(git rev-parse --show-toplevel)
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 BRANCH="codex/$ID"
 WT="${WORKTREE_PATH:-$ROOT/.agent-worktrees/$ID}"
+
+if [ -z "$BASE" ]; then
+  REMOTE_HEAD=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  BASE=${REMOTE_HEAD#origin/}
+fi
+if [ -z "$BASE" ]; then
+  BASE=$(git branch --show-current)
+fi
+if [ -z "$BASE" ] || ! git check-ref-format --branch "$BASE" >/dev/null 2>&1; then
+  echo "unable to determine a valid base branch; pass it explicitly" >&2
+  exit 2
+fi
 
 if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
   echo "branch already exists: $BRANCH" >&2

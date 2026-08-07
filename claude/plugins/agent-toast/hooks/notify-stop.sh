@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # agent-toast — Stop hook (cross-platform: Windows/WSL, macOS, Linux)
 #
-# Reads three values that Claude Code populates from the plugin's userConfig:
+# Reads four values that Claude Code populates from the plugin's userConfig:
 #   CLAUDE_PLUGIN_OPTION_AGENT_NAME    -- toast title
+#   CLAUDE_PLUGIN_OPTION_SESSION_LABEL -- optional per-session title
 #   CLAUDE_PLUGIN_OPTION_ICON_PATH     -- absolute PNG path (blank = bundled icon)
 #   CLAUDE_PLUGIN_OPTION_BEEP_ENABLED  -- "yes"/"y"/"true"/"1"/"on" (anything else = silent)
 #
