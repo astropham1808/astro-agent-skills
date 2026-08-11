@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify.sh — the ONLY definition of done for a target project.
+# verify.sh - the ONLY definition of done for a target project.
 # Keep stack-specific commands in the target project's verifier.
 set -euo pipefail
 
