@@ -1,0 +1,17 @@
+{
+  "name": "project-setup",
+  "version": "0.1.0",
+  "description": "Classify, plan, reconcile, and bootstrap software product repositories: project profile, product plan, design spec, epic backlog, engineering guide, agent instructions, story templates, and a deterministic verification gate. Greenfield or existing repo.",
+  "author": {
+    "name": "Khanh Pham"
+  },
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "bootstrap",
+    "backlog",
+    "product",
+    "scaffolding",
+    "agents"
+  ]
+}

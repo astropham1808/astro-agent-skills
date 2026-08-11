@@ -1,4 +1,4 @@
-# <ID> — <Story title>
+# <ID> - <Story title>
 
 Owner: claude-code | codex        Size: S/M/L        Base: <base branch>
 
