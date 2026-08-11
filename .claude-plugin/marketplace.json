@@ -27,6 +27,36 @@
       },
       "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"],
       "category": "workflow"
+    },
+    {
+      "name": "project-setup",
+      "source": "./claude/plugins/project-setup",
+      "description": "Classify, plan, reconcile, and bootstrap a software product repository: project profile, product plan, conditional design spec, epic backlog, engineering guide, agent instructions, story templates, and a deterministic verification gate. Greenfield or existing repository.",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": ["planning", "bootstrap", "backlog", "product", "scaffolding", "agents"],
+      "category": "workflow"
+    },
+    {
+      "name": "close-story-worktree",
+      "source": "./claude/plugins/close-story-worktree",
+      "description": "Verify that a story pull request was merged, then safely remove its clean local worktree and delete the merged local branch. Refuses to act before the human merge gate.",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": ["workflow", "worktree", "git", "cleanup", "pull-request", "backlog"],
+      "category": "workflow"
+    },
+    {
+      "name": "disciplined-coding",
+      "source": "./claude/plugins/disciplined-coding",
+      "description": "Implement, fix, refactor, or review code with explicit assumptions, minimal complexity, tightly scoped diffs, and verifiable success criteria. Rigor is calibrated to risk.",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": ["coding", "review", "refactor", "verification", "discipline", "scope"],
+      "category": "workflow"
     }
   ]
 }

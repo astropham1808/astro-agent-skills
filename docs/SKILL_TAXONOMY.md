@@ -37,6 +37,9 @@ integration it uses to solve that problem.
 | [close-story-worktree](../codex/skills/close-story-worktree/) | Codex | Repository lifecycle | GitHub CLI/Git-specific | gh, PR merge state, worktrees, and local branches are the contract. | Keep; do not generalize into a generic coding skill. |
 | [claude-multi-agent-flow](../claude/plugins/claude-multi-agent-flow/) | Claude Code | Delivery orchestration | Claude + Codex + Git worktree | Provider mechanics are intentional. Base branch, source-of-truth query, verifier, and formatter are project-configured. | Keep as a Claude adapter; verify installed paths, stage gates, and human PR ownership hermetically. |
 | [agent-toast](../claude/plugins/agent-toast/) | Claude Code | Platform integration | Claude hooks + Windows/macOS/Linux | OS notification commands and Claude hook variables are required by the feature. | Keep as an explicit integration; use mocked OS commands in CI and live OS canaries before release. |
+| [project-setup](../claude/plugins/project-setup/) | Claude Code | Planning and setup | Cross-stack, repository-aware | Port of the Codex skill. Shares its scripts, assets, and references byte for byte; only SKILL.md and the plugin manifest differ. | Keep in sync with the Codex skill; the shared payload is the single source of truth. |
+| [close-story-worktree](../claude/plugins/close-story-worktree/) | Claude Code | Repository lifecycle | GitHub CLI/Git-specific | Port of the Codex skill, sharing the same cleanup script. Branch naming stays convention-agnostic across codex/, worktree-, and claude/ prefixes. | Keep; do not generalize into a generic coding skill. |
+| [disciplined-coding](../claude/plugins/disciplined-coding/) | Claude Code | Foundation | Cross-stack | Port of the Codex skill. Prose only, no scripts or assets. | Keep as the default quality/practice skill on both platforms. |
 
 ## Coupling decisions
 
@@ -44,6 +47,10 @@ integration it uses to solve that problem.
 
 - The Codex and Claude flow skills are separate because they automate different
   provider CLIs and sandbox/review mechanics.
+- project-setup, close-story-worktree, and disciplined-coding ship on both
+  platforms under the same name. Their contract is provider-neutral, so the port
+  duplicates only SKILL.md and the manifest; scripts, assets, and references stay
+  byte-identical and are verified by `diff -r`.
 - close-story-worktree is intentionally tied to GitHub PR state and Git worktrees.
 - agent-toast is intentionally tied to Claude lifecycle hooks and desktop
   notification APIs.

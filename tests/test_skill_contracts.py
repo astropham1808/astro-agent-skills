@@ -23,6 +23,8 @@ CLAUDE_SKILL = (
 )
 CODEX_FLOW = ROOT / "codex" / "skills" / "codex-multi-agents-flow"
 AGENT_TOAST = ROOT / "claude" / "plugins" / "agent-toast"
+# Skills that ship on both platforms under one name, sharing a single payload.
+PORTED_SKILLS = ("project-setup", "close-story-worktree", "disciplined-coding")
 
 
 def run(
@@ -100,6 +102,21 @@ class StaticContractTests(unittest.TestCase):
         self.assertEqual(entries["agent-toast"]["category"], "integration")
         self.assertEqual(entries["claude-multi-agent-flow"]["category"], "workflow")
 
+        # Same rule for every plugin: version in plugin.json, category in the catalog.
+        for name, entry in entries.items():
+            with self.subTest(plugin=name):
+                self.assertNotIn("version", entry)
+                self.assertIn("category", entry)
+                self.assertEqual(entry["source"], f"./claude/plugins/{name}")
+                manifest = json.loads(
+                    (
+                        ROOT / "claude" / "plugins" / name / ".claude-plugin" / "plugin.json"
+                    ).read_text(encoding="utf-8")
+                )
+                self.assertEqual(manifest["name"], name)
+                self.assertIn("version", manifest)
+                self.assertNotIn("category", manifest)
+
     def test_claude_skill_uses_installed_paths_and_hook_stdin(self) -> None:
         skill = (CLAUDE_SKILL / "SKILL.md").read_text(encoding="utf-8")
         settings = (CLAUDE_SKILL / "assets" / "settings.hooks.json").read_text(
@@ -134,7 +151,7 @@ class StaticContractTests(unittest.TestCase):
     def test_every_skill_has_minimal_frontmatter(self) -> None:
         skills = list(ROOT.glob("codex/skills/*/SKILL.md"))
         skills.extend(ROOT.glob("claude/plugins/*/skills/*/SKILL.md"))
-        self.assertEqual(len(skills), 5)
+        self.assertEqual(len(skills), 8)
         for path in skills:
             with self.subTest(path=path):
                 text = path.read_text(encoding="utf-8")
@@ -142,6 +159,43 @@ class StaticContractTests(unittest.TestCase):
                 frontmatter = text.split("---", 2)[1]
                 self.assertIn("\nname:", "\n" + frontmatter)
                 self.assertIn("\ndescription:", "\n" + frontmatter)
+
+    def test_skill_name_matches_its_directory(self) -> None:
+        skills = list(ROOT.glob("codex/skills/*/SKILL.md"))
+        skills.extend(ROOT.glob("claude/plugins/*/skills/*/SKILL.md"))
+        for path in skills:
+            with self.subTest(path=path):
+                frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+                declared = re.search(r"^name:\s*(\S+)", frontmatter, re.M)
+                self.assertIsNotNone(declared)
+                self.assertEqual(declared.group(1), path.parent.name)
+
+    def test_ported_skills_share_one_payload(self) -> None:
+        """A skill shipped on both platforms duplicates prose, never behavior."""
+        for name in PORTED_SKILLS:
+            codex_skill = ROOT / "codex" / "skills" / name
+            claude_skill = ROOT / "claude" / "plugins" / name / "skills" / name
+            for payload in ("scripts", "assets", "references"):
+                source = codex_skill / payload
+                if not source.is_dir():
+                    continue
+                mirror = claude_skill / payload
+                with self.subTest(skill=name, payload=payload):
+                    self.assertTrue(mirror.is_dir(), f"missing {mirror}")
+                    expected = sorted(p.name for p in source.iterdir())
+                    self.assertEqual(expected, sorted(p.name for p in mirror.iterdir()))
+                    for original in source.iterdir():
+                        copy = mirror / original.name
+                        self.assertEqual(
+                            original.read_bytes(),
+                            copy.read_bytes(),
+                            f"{copy} drifted from {original}",
+                        )
+                        self.assertEqual(
+                            original.stat().st_mode & 0o111,
+                            copy.stat().st_mode & 0o111,
+                            f"{copy} executable bit differs from {original}",
+                        )
 
     def test_taxonomy_represents_every_artifact(self) -> None:
         taxonomy = (ROOT / "docs" / "SKILL_TAXONOMY.md").read_text(encoding="utf-8")
@@ -156,6 +210,9 @@ class StaticContractTests(unittest.TestCase):
         for name in expected:
             with self.subTest(name=name):
                 self.assertIn(f"[{name}]", taxonomy)
+        for name in PORTED_SKILLS:
+            with self.subTest(name=name, platform="claude"):
+                self.assertIn(f"](../claude/plugins/{name}/)", taxonomy)
 
     def test_local_markdown_links_resolve(self) -> None:
         pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")

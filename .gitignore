@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+._*
+
+# Python (skill scripts)
+__pycache__/
+*.py[cod]
+
+# Editor
+.idea/
+*.swp
