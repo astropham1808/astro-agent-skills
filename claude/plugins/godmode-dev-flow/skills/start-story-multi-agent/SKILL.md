@@ -46,6 +46,22 @@ cp "${CLAUDE_SKILL_DIR}/assets/pre-commit" .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ~~~
 
+A project without a verifier is not blocked from starting. scripts/verify.sh
+resolves the definition of done in this order:
+
+1. PROJECT_VERIFIER, absolute or relative to the repository root, for projects
+   that already keep their checks somewhere else.
+2. scripts/verify-project.sh.
+3. generic checks detected from Cargo.toml, package.json with its lockfile's
+   package manager, go.mod, pom.xml or a Gradle build, pyproject.toml, or a .NET
+   project file.
+
+Use the generic path only to get moving. Scaffold a real verifier with the
+project-setup skill's scripts/init-verifier.sh, then own it. A repository with no
+recognizable stack and no verifier stops with exit 2 rather than passing by
+default. A verifier that exists but lost its executable bit, which happens on
+Windows checkouts, also stops with a chmod hint instead of being skipped.
+
 Merge ${CLAUDE_SKILL_DIR}/assets/settings.hooks.json into
 .claude/settings.json. Optionally provide executable scripts/format-file.sh;
 it receives the absolute path of the file touched by Claude. Without it, the edit

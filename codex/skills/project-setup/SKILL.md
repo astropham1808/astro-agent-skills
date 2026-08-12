@@ -128,6 +128,27 @@ python3 <skill-dir>/scripts/validate_setup.py --target <repository>
 
 Validation accepts either instruction file. Treat it as a completeness check, not proof that product decisions are correct.
 
+## Scaffold the verifier
+
+The delivery flows treat `scripts/verify-project.sh` as the only definition of
+done, and `bootstrap_project.py` does not write it. Scaffold a starting point
+from the repository's own stack markers:
+
+```bash
+<skill-dir>/scripts/init-verifier.sh --root <repository> --print   # preview
+<skill-dir>/scripts/init-verifier.sh --root <repository>           # write it
+```
+
+The script detects Rust, Node.js with its lockfile's package manager, Go,
+Java with its Maven or Gradle wrapper, Python, and .NET, writes
+`scripts/verify-project.sh`, and marks it executable.
+It never overwrites an existing verifier without `--force`. When no stack is
+detected it writes a `TODO` verifier that exits non-zero, so an unconfigured
+project fails loudly instead of passing silently.
+
+Treat the generated commands as a draft. Replace them with the project's real
+checks, run the verifier once, and only then install the flow's commit gate.
+
 ## Completion contract
 
 Return:
