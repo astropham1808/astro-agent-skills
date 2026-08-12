@@ -194,16 +194,16 @@ The story ID must match `PREFIX-nnn`. The scripts reject any other shape.
 
 ## What runs when
 
-| You say | Tiếng Việt cũng được | What loads | What it does |
-|---|---|---|---|
-| "set up this project", "bootstrap the repo" | "plan trước khi code", "tạo backlog" | project-setup | Classifies, plans, and bootstraps before any implementation code. |
-| "keep the diff small", "don't overengineer" | "làm gọn thôi", "chỉ sửa đúng chỗ" | disciplined-coding | Scopes the diff, states assumptions, defines checkable success. |
-| "start story AL-161", "hand this to Codex to review" | "bắt đầu story AL-161" | start-story-multi-agent | Runs the full two-agent pipeline for one story. |
-| "the PR is merged, clean up the branch" | "PR merged rồi", "dọn worktree", "xong task này rồi" | close-story | Verifies the merge, then removes the worktree and branch. |
+| You say | What loads | What it does |
+|---|---|---|
+| "set up this project", "bootstrap the repo" | project-setup | Classifies, plans, and bootstraps before any implementation code. |
+| "keep the diff small", "don't overengineer" | disciplined-coding | Scopes the diff, states assumptions, defines checkable success. |
+| "start story AL-161", "hand this to Codex to review" | start-story-multi-agent | Runs the full two-agent pipeline for one story. |
+| "the PR is merged, clean up the branch" | close-story | Verifies the merge, then removes the worktree and branch. |
 
-Skills load from what you say, so the phrasing above is illustrative rather than a
-command list. Both languages reach the same skill because each SKILL.md carries
-triggers in both.
+Skills load from what you say, so the phrasing is illustrative rather than a
+command list. Vietnamese reaches the same skills; every SKILL.md carries triggers
+in both languages.
 
 ## How verification resolves
 
