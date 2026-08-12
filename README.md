@@ -33,7 +33,7 @@ Four skills covering the story lifecycle, plus a notification plugin.
 | Foundation | disciplined-coding | Scoped diffs, stated assumptions, verifiable success criteria. |
 | Delivery orchestration | start-story-multi-agent, codex-multi-agents-flow | One story: implement, verify, independent review, one bounded fix pass. |
 | Repository lifecycle | close-story, close-story-worktree | Tear down the worktree and branch after the merge, never before. |
-| Platform integration | agent-toast | Desktop notification when Claude finishes. Hooks only, no skills. |
+| Platform integration | agent-toast | Optional and separate. Desktop notification when Claude finishes. Hooks only, no skills. |
 
 Every Codex skill has a Claude Code counterpart. The two delivery-orchestration
 skills stay separate because they automate different provider CLIs. The other
@@ -57,6 +57,18 @@ Claude invokes a bundled skill as `plugin:skill`:
 ~~~text
 /plugin marketplace add https://github.com/astropham1808/astro-agent-skills
 /plugin install godmode-dev-flow@astro-agent-skills
+~~~
+
+That is the whole install. The skills need no notification tool, no Homebrew
+package, and no OS-level dependency beyond Git and your own toolchain.
+
+agent-toast is a separate, optional plugin that has nothing to do with the
+skills. Install it only if you want a desktop notification when Claude finishes
+a turn, and read
+[its own README](./claude/plugins/agent-toast/README.md) for the per-platform
+prerequisites:
+
+~~~text
 /plugin install agent-toast@astro-agent-skills
 ~~~
 
@@ -101,7 +113,7 @@ git clone https://github.com/astropham1808/astro-agent-skills
 Your repository needs exactly one thing these skills do not ship: a command that
 decides whether the work is good. Everything else is generated.
 
-**You:** `set up this repo for the story flow`
+**You:** `set up this repo for the story flow` | `set up repo này cho story flow`
 
 **Agent:** runs project-setup, classifies the product, writes the plan, backlog,
 engineering guide, and repository instructions, then scaffolds the verifier:
@@ -127,7 +139,7 @@ Review the generated commands and run it once:
 scripts/verify-project.sh
 ~~~
 
-**You:** `start story AL-161`
+**You:** `start story AL-161` | `bắt đầu story AL-161`
 
 **Agent:** opens an isolated worktree, writes the spec, implements, verifies,
 hands the branch to Codex for an independent read-only review, applies at most
@@ -135,7 +147,7 @@ one fix pass, verifies again, and stops with a suggested `gh pr create`.
 
 **You:** read the diff, push, open the PR, merge.
 
-**You:** `PR merged rồi, dọn worktree`
+**You:** `PR merged already, clean up the worktree` | `PR merged rồi, dọn worktree`
 
 **Agent:** runs close-story, confirms `mergedAt` on the exact PR, requires a
 clean worktree, previews the cleanup, then removes the worktree and deletes the
@@ -182,15 +194,16 @@ The story ID must match `PREFIX-nnn`. The scripts reject any other shape.
 
 ## What runs when
 
-Skills load from what you say, so these are the phrases that reach for each one.
+| You say | Tiếng Việt cũng được | What loads | What it does |
+|---|---|---|---|
+| "set up this project", "bootstrap the repo" | "plan trước khi code", "tạo backlog" | project-setup | Classifies, plans, and bootstraps before any implementation code. |
+| "keep the diff small", "don't overengineer" | "làm gọn thôi", "chỉ sửa đúng chỗ" | disciplined-coding | Scopes the diff, states assumptions, defines checkable success. |
+| "start story AL-161", "hand this to Codex to review" | "bắt đầu story AL-161" | start-story-multi-agent | Runs the full two-agent pipeline for one story. |
+| "the PR is merged, clean up the branch" | "PR merged rồi", "dọn worktree", "xong task này rồi" | close-story | Verifies the merge, then removes the worktree and branch. |
 
-| You say | What loads | What it does |
-|---|---|---|
-| "plan trước khi code", "set up project", "bootstrap repo" | project-setup | Classifies, plans, and bootstraps before any implementation code. |
-| "keep the diff small", "don't overengineer", "chỉ sửa đúng chỗ" | disciplined-coding | Scopes the diff, states assumptions, defines checkable success. |
-| "start story AL-161", "hand this to Codex to review" | start-story-multi-agent | Runs the full two-agent pipeline for one story. |
-| "PR merged rồi", "dọn worktree", "clean up the branch" | close-story | Verifies the merge, then removes the worktree and branch. |
-| nothing, it is a hook | agent-toast | Notifies your desktop when Claude stops. |
+Skills load from what you say, so the phrasing above is illustrative rather than a
+command list. Both languages reach the same skill because each SKILL.md carries
+triggers in both.
 
 ## How verification resolves
 
@@ -239,16 +252,6 @@ Claude edit hook. Without that last one the hook is a safe no-op.
 | `FETCH_BASE` | `1` | Set to `0` to pin the base offline instead of fetching it. |
 | `SOT_QUERY` | unset | One narrow Notion query, Jira JQL, or issue URL. The agent uses it exactly once to write the local spec. |
 | `PROJECT_VERIFIER` | unset | Path to a verifier outside `scripts/verify-project.sh`. Relative paths resolve against the repository root. |
-
-### Desktop notifications
-
-agent-toast needs an OS notifier. On macOS, `brew install terminal-notifier`
-enables the custom icon; without it the plugin falls back to `osascript` and
-notifications still work. On Debian or Ubuntu,
-`sudo apt install libnotify-bin pulseaudio-utils`; on Fedora,
-`sudo dnf install libnotify pulseaudio-utils`. On WSL it needs `wslpath` and
-`powershell.exe` reachable, with no PowerShell modules required. On a headless
-server it silently skips. Configure it with `/plugin config agent-toast`.
 
 ## Tech stack fit
 
