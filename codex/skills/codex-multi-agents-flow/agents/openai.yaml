@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Multi-Agent Flow"
+  short_description: "Build, review, and verify stories safely"
+  default_prompt: "Use $codex-multi-agents-flow to deliver this story with separate Codex implementer and reviewer sessions."

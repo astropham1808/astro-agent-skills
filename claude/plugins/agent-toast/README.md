@@ -28,7 +28,7 @@ If you are on macOS or Linux without these restrictions, the plugin still works 
 |---|---|---|---|---|
 | **Windows (via WSL)** | WinRT toast (PowerShell inline, no `.ps1` file → ThreatLocker-safe) | ✅ | `System.Media.SoundPlayer` plays bundled `notify.wav` | None |
 | **macOS** | `terminal-notifier` (with icon) **or** `osascript` fallback (no icon) | ✅ with `terminal-notifier`, ❌ without | `afplay notify.wav` | `brew install terminal-notifier` (for icon) |
-| **Linux** | `notify-send` (libnotify) | ✅ | `paplay` / `aplay` / `play` — first available | `libnotify-bin` + an audio CLI (most desktop distros ship these) |
+| **Linux** | `notify-send` (libnotify) | ✅ | `paplay` / `aplay` / `play` - first available | `libnotify-bin` + an audio CLI (most desktop distros ship these) |
 
 If a required tool is missing on a given OS, the hook silently degrades (no notification or no sound) rather than failing.
 
@@ -39,13 +39,14 @@ If a required tool is missing on a given OS, the hook silently degrades (no noti
 /plugin install agent-toast@astro-agent-skills
 ```
 
-Claude Code prompts for three settings; change later via `/plugin config agent-toast`.
+Claude Code prompts for four settings (agent name, optional session label, icon path, and beep); change them later via `/plugin config agent-toast`.
 
 ## Configuration
 
 | Option | Default | Notes |
 |---|---|---|
 | Agent name | `Astro Agent` | Toast title |
+| Session label | *(blank)* | Optional label used in place of the agent name when several sessions run at once. |
 | Custom icon (PNG only) | *(bundled astronaut)* | Absolute path. Windows-style `C:\path\to\icon.png` or POSIX `/path/to/icon.png`. |
 | Play beep after toast? | `no` | Type `yes` to also play `notify.wav` through the audio device |
 
@@ -71,13 +72,13 @@ sudo apt install libnotify-bin pulseaudio-utils
 sudo dnf install libnotify pulseaudio-utils
 ```
 
-Headless servers (no GUI) will silently skip — there's nowhere to show a notification.
+Headless servers (no GUI) will silently skip - there's nowhere to show a notification.
 
 ## Implementation notes
 
 - The toast uses the legacy `ToastImageAndText02` template on Windows because the modern `ToastGeneric` template silently drops when the calling AppId isn't a registered AppUserModelID.
-- Sound on Windows uses `System.Media.SoundPlayer` (audio device) rather than `[console]::Beep` (motherboard) — the latter is silent under Claude Code's detached hook subprocess because there's no console attached.
+- Sound on Windows uses `System.Media.SoundPlayer` (audio device) rather than `[console]::Beep` (motherboard) - the latter is silent under Claude Code's detached hook subprocess because there's no console attached.
 
 ## License
 
-MIT — see `LICENSE`.
+MIT - see `LICENSE`.

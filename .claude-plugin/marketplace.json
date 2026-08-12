@@ -1,23 +1,45 @@
 {
   "name": "astro-agent-skills",
-  "id": "astro-agent-skills",
   "owner": {
     "name": "Khanh Pham"
   },
   "metadata": {
-    "description": "Claude Code plugins by Astro — desktop notifications and productivity hooks",
-    "version": "1.0.0"
+    "description": "Claude Code plugins by Astro - agent workflow and platform integrations",
+    "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "agent-toast",
-      "source": "./plugins/agent-toast",
-      "description": "Windows toast notification on Claude Code Stop event. No module install, ThreatLocker-safe. Configurable name, icon, beep.",
-      "version": "0.4.0",
+      "source": "./claude/plugins/agent-toast",
+      "description": "Claude Stop-hook desktop notification integration for Windows/WSL, macOS, and Linux. ThreatLocker-safe Windows path; configurable name, session label, icon, and beep.",
       "author": {
         "name": "Khanh Pham"
       },
-      "keywords": ["hook", "notification", "toast", "windows", "wsl"],
+      "keywords": [
+        "hook",
+        "notification",
+        "toast",
+        "windows",
+        "wsl"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "godmode-dev-flow",
+      "source": "./claude/plugins/godmode-dev-flow",
+      "description": "Bundled story delivery lifecycle for Claude Code. Installs four skills: project-setup (classify and bootstrap a repository), disciplined-coding (scoped diffs and verifiable success criteria), start-story-multi-agent (Claude implements, Codex reviews read-only, human owns PR and merge gates), and close-story (worktree and branch cleanup after merge).",
+      "author": {
+        "name": "Khanh Pham"
+      },
+      "keywords": [
+        "workflow",
+        "worktree",
+        "multi-agent",
+        "codex",
+        "review",
+        "backlog",
+        "project-setup"
+      ],
       "category": "workflow"
     }
   ]

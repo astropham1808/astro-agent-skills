@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# agent-toast — Stop hook (cross-platform: Windows/WSL, macOS, Linux)
+# agent-toast - Stop hook (cross-platform: Windows/WSL, macOS, Linux)
 #
-# Reads three values that Claude Code populates from the plugin's userConfig:
+# Reads four values that Claude Code populates from the plugin's userConfig:
 #   CLAUDE_PLUGIN_OPTION_AGENT_NAME    -- toast title
+#   CLAUDE_PLUGIN_OPTION_SESSION_LABEL -- optional per-session title
 #   CLAUDE_PLUGIN_OPTION_ICON_PATH     -- absolute PNG path (blank = bundled icon)
 #   CLAUDE_PLUGIN_OPTION_BEEP_ENABLED  -- "yes"/"y"/"true"/"1"/"on" (anything else = silent)
 #
@@ -104,7 +105,7 @@ notify_wsl() {
       powershell.exe -NoProfile -Command - <<'PS_EOF' >/dev/null 2>&1 || true
 $ErrorActionPreference = 'SilentlyContinue'
 
-# Sound MUST play before any WinRT type loads — loading
+# Sound MUST play before any WinRT type loads - loading
 # Windows.UI.Notifications.* in this PS process silently breaks
 # System.Media.SoundPlayer audio output (verified empirically).
 if ($env:ASTRO_BEEP -eq '1' -and $env:ASTRO_SOUND_WIN) {
@@ -133,7 +134,7 @@ PS_EOF
 }
 
 ###############################################################################
-# macOS — terminal-notifier with -activate for click-to-focus, or osascript
+# macOS - terminal-notifier with -activate for click-to-focus, or osascript
 #
 # Detects the running terminal app (iTerm2, Terminal, Warp, Ghostty) and
 # passes its bundle ID to terminal-notifier -activate so clicking the
@@ -174,7 +175,7 @@ notify_macos() {
 }
 
 ###############################################################################
-# Linux — notify-send + audio
+# Linux - notify-send + audio
 ###############################################################################
 notify_linux() {
     local body="$PROJECT_NAME - Task complete"

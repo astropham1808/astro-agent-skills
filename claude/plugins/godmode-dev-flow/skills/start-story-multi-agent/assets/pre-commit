@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Keep stack-specific checks in the target project's verifier.
+set -euo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+if [ -x "$ROOT/scripts/verify-project.sh" ]; then
+  exec "$ROOT/scripts/verify-project.sh"
+fi
+
+echo "missing executable project verifier: $ROOT/scripts/verify-project.sh" >&2
+echo "configure the project's lint, typecheck, test, and build checks there" >&2
+exit 1
