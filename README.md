@@ -370,8 +370,20 @@ delivery flows ship the same `verify.sh`, ported skills stay byte-identical,
 skill scripts stay `100755` in the index, and every failure gate still stops the
 stage after it.
 
-Run shell behavior tests under WSL or POSIX. Run one live canary on every
-advertised provider and operating-system integration before publishing.
+CI runs the suite on Ubuntu and macOS. On macOS it runs twice, the second time
+pinned to the system Bash 3.2, which is what keeps Bash 4 syntax out of the
+scripts. Reproduce that locally with any Bash you have:
+
+~~~bash
+ASTRO_BASH=/bin/bash python3 -m unittest discover -s tests
+~~~
+
+A third job checks out the repository on native Windows and fails if the working
+tree comes back with CRLF, which would break every script under WSL. Shell
+behavior tests skip themselves there, since Windows support means WSL.
+
+Run one live canary on every advertised provider and operating-system
+integration before publishing.
 
 Keep each skill self-contained: update its SKILL.md, scripts, assets, and
 references together.

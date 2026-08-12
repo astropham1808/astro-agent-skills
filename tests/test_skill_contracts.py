@@ -17,6 +17,9 @@ GODMODE = ROOT / "claude" / "plugins" / "godmode-dev-flow"
 CLAUDE_SKILL = GODMODE / "skills" / "start-story-multi-agent"
 CODEX_FLOW = ROOT / "codex" / "skills" / "codex-multi-agents-flow"
 AGENT_TOAST = ROOT / "claude" / "plugins" / "agent-toast"
+# The shell under test. macOS ships Bash 3.2, so CI runs the suite against it
+# explicitly to keep the scripts free of Bash 4 syntax.
+BASH = os.environ.get("ASTRO_BASH", "bash")
 # Skills that ship on both platforms sharing a single payload, as
 # (codex skill directory, Claude skill directory under godmode-dev-flow).
 PORTED_SKILLS = (
@@ -272,13 +275,13 @@ class StaticContractTests(unittest.TestCase):
                 with self.subTest(markdown=markdown, target=target):
                     self.assertTrue(resolved.exists(), f"missing local link: {resolved}")
 
-    @unittest.skipIf(shutil.which("bash") is None, "bash is unavailable")
+    @unittest.skipIf(shutil.which(BASH) is None, f"{BASH} is unavailable")
     def test_shell_syntax(self) -> None:
         scripts = list(ROOT.rglob("*.sh"))
         scripts.extend(ROOT.rglob("pre-commit"))
         for path in scripts:
             with self.subTest(path=path):
-                result = run(["bash", "-n", str(path)], cwd=ROOT)
+                result = run([BASH, "-n", str(path)], cwd=ROOT)
                 self.assertEqual(result.returncode, 0, result.stderr)
 
 
@@ -312,7 +315,7 @@ class ShellBehaviorTests(unittest.TestCase):
         env = os.environ.copy()
         env["FETCH_BASE"] = "0"
         result = run(
-            ["bash", str(flow / "scripts" / "new-story.sh"), story_id, "trunk"],
+            [BASH, str(flow / "scripts" / "new-story.sh"), story_id, "trunk"],
             cwd=repo,
             env=env,
         )
@@ -410,7 +413,7 @@ class ShellBehaviorTests(unittest.TestCase):
         touched = repo / "src" / "file with spaces.py"
         payload = json.dumps({"tool_input": {"file_path": str(touched)}})
         result = run(
-            ["bash", str(CLAUDE_SKILL / "assets" / "format-hook.sh")],
+            [BASH, str(CLAUDE_SKILL / "assets" / "format-hook.sh")],
             cwd=repo,
             env=env,
             input_text=payload,
@@ -437,7 +440,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 env = os.environ.copy()
                 env["FETCH_BASE"] = "0"
                 result = run(
-                    ["bash", str(flow / "scripts" / "new-story.sh"), "AL-102"],
+                    [BASH, str(flow / "scripts" / "new-story.sh"), "AL-102"],
                     cwd=repo,
                     env=env,
                 )
@@ -450,7 +453,7 @@ class ShellBehaviorTests(unittest.TestCase):
         mock_root, env = self.mock_commands()
         env["BASE_BRANCH"] = "trunk"
         result = run(
-            ["bash", str(CLAUDE_SKILL / "scripts" / "story.sh"), "AL-101", "trunk"],
+            [BASH, str(CLAUDE_SKILL / "scripts" / "story.sh"), "AL-101", "trunk"],
             cwd=repo,
             env=env,
         )
@@ -466,7 +469,7 @@ class ShellBehaviorTests(unittest.TestCase):
         mock_root, env = self.mock_commands()
         env["ASTRO_CLAUDE_EXIT"] = "7"
         result = run(
-            ["bash", str(CLAUDE_SKILL / "scripts" / "story.sh"), "AL-101", "trunk"],
+            [BASH, str(CLAUDE_SKILL / "scripts" / "story.sh"), "AL-101", "trunk"],
             cwd=repo,
             env=env,
         )
@@ -482,7 +485,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 mock_root, env = self.mock_commands()
                 env["ASTRO_BUILDER_COMMITS"] = "0"
                 result = run(
-                    ["bash", str(flow / "scripts" / "story.sh"), "AL-101", "trunk"],
+                    [BASH, str(flow / "scripts" / "story.sh"), "AL-101", "trunk"],
                     cwd=repo,
                     env=env,
                 )
@@ -501,7 +504,7 @@ class ShellBehaviorTests(unittest.TestCase):
         mock_root, env = self.mock_commands()
         env["BASE_BRANCH"] = "trunk"
         result = run(
-            ["bash", str(CODEX_FLOW / "scripts" / "story.sh"), "AL-101", "trunk"],
+            [BASH, str(CODEX_FLOW / "scripts" / "story.sh"), "AL-101", "trunk"],
             cwd=repo,
             env=env,
         )
@@ -516,7 +519,7 @@ class ShellBehaviorTests(unittest.TestCase):
         self.create_story(repo, CODEX_FLOW)
         mock_root, env = self.mock_commands()
         result = run(
-            ["bash", str(CODEX_FLOW / "scripts" / "story.sh"), "AL-101", "trunk"],
+            [BASH, str(CODEX_FLOW / "scripts" / "story.sh"), "AL-101", "trunk"],
             cwd=repo,
             env=env,
         )
@@ -532,7 +535,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 mock_root, env = self.mock_commands()
                 env["ASTRO_REVIEW_VERDICT"] = "review looks fine"
                 result = run(
-                    ["bash", str(flow / "scripts" / "story.sh"), "AL-101", "trunk"],
+                    [BASH, str(flow / "scripts" / "story.sh"), "AL-101", "trunk"],
                     cwd=repo,
                     env=env,
                 )
@@ -561,7 +564,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 )
                 env = os.environ.copy()
                 env["PROJECT_VERIFIER"] = "ci/check.sh"
-                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                result = run([BASH, str(verify), str(repo)], cwd=repo, env=env)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("override-verifier", result.stdout)
                 self.assertNotIn("fixture-verifier", result.stdout)
@@ -573,7 +576,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 repo = self.init_repo()
                 target = repo / "scripts" / "verify-project.sh"
                 target.chmod(target.stat().st_mode & ~0o111)
-                result = run(["bash", str(verify), str(repo)], cwd=repo)
+                result = run([BASH, str(verify), str(repo)], cwd=repo)
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("not executable", result.stderr)
 
@@ -590,7 +593,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 env = os.environ.copy()
                 env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
                 env["ASTRO_CARGO_LOG"] = str(log)
-                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                result = run([BASH, str(verify), str(repo)], cwd=repo, env=env)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("VERIFY PASSED", result.stdout)
                 invoked = log.read_text(encoding="utf-8")
@@ -615,7 +618,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 env = os.environ.copy()
                 env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
                 env["ASTRO_BUILD_LOG"] = str(log)
-                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                result = run([BASH, str(verify), str(repo)], cwd=repo, env=env)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 invoked = log.read_text(encoding="utf-8")
                 self.assertIn("wrapper", invoked)
@@ -634,7 +637,7 @@ class ShellBehaviorTests(unittest.TestCase):
                 env = os.environ.copy()
                 env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
                 env["ASTRO_BUILD_LOG"] = str(log)
-                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                result = run([BASH, str(verify), str(repo)], cwd=repo, env=env)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("VERIFY PASSED", result.stdout)
                 self.assertIn("verify", log.read_text(encoding="utf-8"))
@@ -644,7 +647,7 @@ class ShellBehaviorTests(unittest.TestCase):
         repo = self.init_repo(with_verifier=False)
         (repo / "build.gradle.kts").write_text("plugins { java }\n", encoding="utf-8")
         write_executable(repo / "gradlew", "#!/usr/bin/env bash\nexit 0\n")
-        result = run(["bash", str(scaffold)], cwd=repo)
+        result = run([BASH, str(scaffold)], cwd=repo)
         self.assertEqual(result.returncode, 0, result.stderr)
         generated = (repo / "scripts" / "verify-project.sh").read_text(encoding="utf-8")
         self.assertIn("./gradlew --no-daemon build", generated)
@@ -653,7 +656,7 @@ class ShellBehaviorTests(unittest.TestCase):
         for verify in self.verify_scripts():
             with self.subTest(flow=verify.parent.parent.name):
                 repo = self.init_repo(with_verifier=False)
-                result = run(["bash", str(verify), str(repo)], cwd=repo)
+                result = run([BASH, str(verify), str(repo)], cwd=repo)
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("init-verifier.sh", result.stderr)
 
@@ -666,7 +669,7 @@ class ShellBehaviorTests(unittest.TestCase):
         )
         (repo / "pnpm-lock.yaml").write_text("lockfileVersion: 9\n", encoding="utf-8")
 
-        created = run(["bash", str(scaffold)], cwd=repo)
+        created = run([BASH, str(scaffold)], cwd=repo)
         self.assertEqual(created.returncode, 0, created.stderr)
         target = repo / "scripts" / "verify-project.sh"
         self.assertTrue(target.is_file())
@@ -675,20 +678,20 @@ class ShellBehaviorTests(unittest.TestCase):
         self.assertIn("pnpm run lint", generated)
         self.assertIn("pnpm run test", generated)
         self.assertIn("# pnpm run typecheck", generated)
-        syntax = run(["bash", "-n", str(target)], cwd=repo)
+        syntax = run([BASH, "-n", str(target)], cwd=repo)
         self.assertEqual(syntax.returncode, 0, syntax.stderr)
 
         target.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
-        kept = run(["bash", str(scaffold)], cwd=repo)
+        kept = run([BASH, str(scaffold)], cwd=repo)
         self.assertEqual(kept.returncode, 0, kept.stderr)
         self.assertEqual(target.read_text(encoding="utf-8"), "#!/usr/bin/env bash\nexit 0\n")
 
-        preview = run(["bash", str(scaffold), "--print"], cwd=repo)
+        preview = run([BASH, str(scaffold), "--print"], cwd=repo)
         self.assertEqual(preview.returncode, 0, preview.stderr)
         self.assertIn("pnpm run lint", preview.stdout)
         self.assertEqual(target.read_text(encoding="utf-8"), "#!/usr/bin/env bash\nexit 0\n")
 
-        forced = run(["bash", str(scaffold), "--force"], cwd=repo)
+        forced = run([BASH, str(scaffold), "--force"], cwd=repo)
         self.assertEqual(forced.returncode, 0, forced.stderr)
         self.assertIn("pnpm run lint", target.read_text(encoding="utf-8"))
 
@@ -697,7 +700,7 @@ class ShellBehaviorTests(unittest.TestCase):
         scaffold = ROOT / "codex" / "skills" / "project-setup" / "scripts" / "init-verifier.sh"
         repo = self.init_repo(with_verifier=False)
         (repo / "go.mod").write_text("module fixture\n", encoding="utf-8")
-        result = run(["bash", str(scaffold), "--root", str(repo)], cwd=ROOT)
+        result = run([BASH, str(scaffold), "--root", str(repo)], cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
         generated = (repo / "scripts" / "verify-project.sh").read_text(encoding="utf-8")
         self.assertIn("go test ./...", generated)
@@ -731,8 +734,8 @@ class ShellBehaviorTests(unittest.TestCase):
         env["CLAUDE_PLUGIN_OPTION_SESSION_LABEL"] = "fixture"
         env["CLAUDE_PLUGIN_OPTION_ICON_PATH"] = ""
         env["CLAUDE_PLUGIN_OPTION_BEEP_ENABLED"] = "no"
-        run(["bash", str(start)], cwd=root, env=env, check=True)
-        run(["bash", str(stop)], cwd=root, env=env, check=True)
+        run([BASH, str(start)], cwd=root, env=env, check=True)
+        run([BASH, str(stop)], cwd=root, env=env, check=True)
         notification = log.read_text(encoding="utf-8")
         self.assertIn("fixture", notification)
         self.assertIn(root.name, notification)
