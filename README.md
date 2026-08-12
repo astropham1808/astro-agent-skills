@@ -78,6 +78,173 @@ The Claude multi-agent flow keeps its provider-specific mechanics, but its story
 template, verifier, and formatter hook are stack-neutral. Projects provide their
 own executable scripts/verify-project.sh and optional scripts/format-file.sh.
 
+## When to use the delivery flow
+
+The two delivery-orchestration skills (start-story-multi-agent for Claude Code,
+codex-multi-agents-flow for Codex) automate one story at a time. They pay off only
+when the work is scoped and the definition of done is mechanical.
+
+Use the flow when all of these hold:
+
+- The work is one story-sized unit with an ID matching `PREFIX-nnn`, for example
+  `AL-161`. The scripts reject any other shape.
+- The repository is a Git repository, and a base branch is resolvable from
+  `origin/HEAD`, from `BASE_BRANCH`, or as an explicit argument.
+- Acceptance criteria can be written as commands or artifact assertions, not as
+  subjective judgments.
+- A deterministic verifier exists or can be written, and it exits non-zero on
+  failure.
+- You accept that push, PR creation, and merge stay human gates. Neither flow
+  performs them.
+
+Skip the flow when the change is a typo or an obvious one-line fix, when the work
+is an exploratory spike with no stable acceptance criteria, when the verifier
+cannot run locally, or when the story cannot be isolated to one branch. Reach for
+disciplined-coding alone in those cases.
+
+Pick the delivery model before automating anything:
+
+| Model | Use when | Skill |
+|---|---|---|
+| Single-agent | Small, tightly coupled, exploratory, or poorly specified work. | disciplined-coding |
+| Dual-agent | One material story where an independent reviewer raises confidence. | start-story-multi-agent or codex-multi-agents-flow |
+| Multi-agent | Several ready, independent stories with deterministic verification. | One flow run per story, one worktree each |
+
+Parallel activity without independent scope is not throughput. See
+[references/delivery-models.md](./claude/plugins/godmode-dev-flow/skills/project-setup/references/delivery-models.md)
+for the readiness test.
+
+### Prerequisites
+
+The scripts check their own dependencies and exit 2 with the missing command name.
+
+| Stage | Required on PATH |
+|---|---|
+| new-story.sh (both flows) | git, mkdir, cp, grep, sed, rm |
+| start-story-multi-agent story.sh | claude, codex, git, tee, jq, grep, mkdir |
+| codex-multi-agents-flow story.sh | codex, git, tee, grep, mkdir |
+| close-story cleanup | git, gh authenticated against the repository |
+
+A POSIX shell is required. On Windows, run everything inside WSL. Git must be new
+enough for `git worktree`. Both flows need the target project's own toolchain
+available, since verification runs the project's real commands.
+
+The target project must also provide:
+
+- executable `scripts/verify-project.sh`, the only definition of done;
+- `specs/<ID>.md`, the local execution contract;
+- `CLAUDE.md` and `AGENTS.md` carrying the same repository rules, so both agents
+  receive the same contract;
+- optional executable `scripts/format-file.sh` for the Claude edit hook. Without
+  it the hook is a safe no-op.
+
+### Environment variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BASE_BRANCH` | resolved from `origin/HEAD`, then the current branch | Base branch for the worktree and the review diff. |
+| `WORKTREE_PATH` | `.claude/worktrees/<ID>` or `.agent-worktrees/<ID>` | Where the story worktree is created. |
+| `FETCH_BASE` | `1` | Set to `0` to pin the base offline instead of fetching it. |
+| `SOT_QUERY` | unset | One narrow Notion query, Jira JQL, or issue URL. The agent uses it exactly once to write the local spec. |
+
+## End-to-end usage
+
+### 1. Prepare the project once
+
+From the target project root, with the skill installed:
+
+~~~bash
+mkdir -p specs artifacts scripts .claude/hooks
+cp "${CLAUDE_SKILL_DIR}/assets/spec-template.md" specs/_TEMPLATE.md
+cp "${CLAUDE_SKILL_DIR}/assets/format-hook.sh" .claude/hooks/format-file.sh
+chmod +x .claude/hooks/format-file.sh
+~~~
+
+Write executable `scripts/verify-project.sh` with the project's real lint,
+typecheck, test, and build commands, run it successfully, then install the commit
+gate and merge `assets/settings.hooks.json` into `.claude/settings.json`:
+
+~~~bash
+scripts/verify-project.sh
+cp "${CLAUDE_SKILL_DIR}/assets/pre-commit" .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+~~~
+
+For a greenfield or unfamiliar repository, run project-setup first. It classifies
+the product, produces the plan, backlog, engineering guide, and the verification
+contract this flow depends on.
+
+### 2. Open the story
+
+~~~bash
+"${CLAUDE_SKILL_DIR}/scripts/new-story.sh" AL-161            # base from origin/HEAD
+"${CLAUDE_SKILL_DIR}/scripts/new-story.sh" AL-161 trunk      # explicit base
+~~~
+
+This creates branch `worktree-AL-161` in an isolated worktree without touching the
+primary branch or your uncommitted changes. Complete
+`.claude/worktrees/AL-161/specs/AL-161.md`, expressing every Done-when item as an
+executable command or an artifact assertion.
+
+### 3. Run the pipeline
+
+~~~bash
+"${CLAUDE_SKILL_DIR}/scripts/story.sh" AL-161
+~~~
+
+With a remote source of truth instead of a hand-written spec:
+
+~~~bash
+SOT_QUERY='<one narrow Notion query, Jira JQL, or issue URL>' \
+  "${CLAUDE_SKILL_DIR}/scripts/story.sh" AL-161
+~~~
+
+The stages are: implement and commit, verify, independent read-only review with a
+`VERDICT: PASS` or `VERDICT: CHANGES_REQUESTED` line, at most one committed fix
+pass, re-verify and re-review when needed. A failed stage stops every later stage.
+Traces land in the worktree's ignored `.claude-flow/<ID>/`. The script prints a
+suggested `gh pr create` command and stops there.
+
+### 4. Human gate, then close the story
+
+You review, push, open the PR, and merge. Afterwards, invoke close-story. It
+confirms `mergedAt` on the exact PR, requires a clean worktree, previews the
+cleanup, and only then removes the worktree and deletes the local branch with
+`git branch -d`. It never force-removes, never merges, and never deletes the
+remote branch unless you ask.
+
+## Tech stack fit
+
+The flow is stack-neutral by construction. No skill hardcodes a language,
+framework, package manager, or test runner. The only integration point is
+`scripts/verify-project.sh`, so any stack works if its checks can run as one
+command that exits non-zero on failure.
+
+What actually constrains adoption is the environment, not the language: a POSIX
+shell, Git worktree support, and a toolchain that runs locally without a paid or
+interactive external step.
+
+| Stack | Example scripts/verify-project.sh body |
+|---|---|
+| Node.js / TypeScript | `npm ci && npm run lint && npm run typecheck && npm test && npm run build` |
+| Python | `ruff check . && mypy . && pytest -q` |
+| Go | `go vet ./... && go test ./... && go build ./...` |
+| Rust | `cargo fmt --check && cargo clippy -- -D warnings && cargo test` |
+| .NET | `dotnet format --verify-no-changes && dotnet test` |
+| Monorepo | Delegate to the workspace runner, for example `pnpm -r verify` or `nx affected -t lint,test,build` |
+
+Stacks that need extra care:
+
+- Mobile and desktop builds, where a full build is slow. Keep the verifier scoped
+  to what a story can realistically prove, and record device or store checks as
+  human gates.
+- UI work, where the visible result is not mechanically checkable. Assert that a
+  screenshot artifact exists at an exact path and leave the visual judgment to the
+  human gate.
+- Repositories whose tests need live credentials or paid services. Gate those
+  behind a separate command and keep the story verifier hermetic.
+- Non-software repositories, which project-setup explicitly does not cover.
+
 ## Repository layout
 
 ~~~text
