@@ -1,6 +1,6 @@
 ---
 name: start-story-multi-agent
-description: Run a repository story through Claude Code as implementer and Codex CLI as an independent reviewer, using an isolated Git worktree, a local machine-checkable spec, project-owned verification, one bounded fix pass, and human PR and merge gates. Use when the user starts, resumes, reviews, or verifies a story ID; asks to hand work from Claude to Codex; or wants to set up this two-agent delivery workflow. Support a local request, Notion, Jira, or another source of truth without requiring one provider.
+description: Run a repository story through Claude Code as implementer and Codex CLI as an independent reviewer, using an isolated Git worktree, a local machine-checkable spec, project-owned verification, one bounded fix pass, and human PR and merge gates. Use when the user starts, resumes, reviews, or verifies a story ID; asks to hand work from Claude to Codex; or wants to set up this two-agent delivery workflow. Also use when the user says "bắt đầu story AL-161", "chạy story này", "giao cho Codex review", or "set up flow hai agent". Support a local request, Notion, Jira, or another source of truth without requiring one provider.
 ---
 
 # Claude multi-agent story flow
