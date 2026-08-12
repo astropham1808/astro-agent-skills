@@ -1,0 +1,18 @@
+{
+  "name": "godmode-dev-flow",
+  "version": "1.0.0",
+  "description": "Bundled Claude Code skills for the full story delivery lifecycle: classify and bootstrap a repository, implement with disciplined scope control, run a Claude implementer with an independent Codex reviewer in an isolated worktree, and clean up the worktree after the human merge gate.",
+  "author": {
+    "name": "Khanh Pham"
+  },
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "worktree",
+    "multi-agent",
+    "codex",
+    "review",
+    "backlog",
+    "project-setup"
+  ]
+}

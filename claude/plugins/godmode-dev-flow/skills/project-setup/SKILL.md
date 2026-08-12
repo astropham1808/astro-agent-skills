@@ -145,5 +145,5 @@ Do not claim setup is complete while required decisions remain hidden, validatio
 
 ## Related
 
-Hand the resulting backlog to `claude-multi-agent-flow` for story delivery, and to
-`close-story-worktree` for cleanup after each merge.
+Hand the resulting backlog to `start-story-multi-agent` for story delivery, and to
+`close-story` for cleanup after each merge.

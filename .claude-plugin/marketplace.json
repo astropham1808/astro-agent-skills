@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Claude Code plugins by Astro - agent workflow and platform integrations",
-    "version": "1.1.0"
+    "version": "2.0.0"
   },
   "plugins": [
     {
@@ -15,47 +15,31 @@
       "author": {
         "name": "Khanh Pham"
       },
-      "keywords": ["hook", "notification", "toast", "windows", "wsl"],
+      "keywords": [
+        "hook",
+        "notification",
+        "toast",
+        "windows",
+        "wsl"
+      ],
       "category": "integration"
     },
     {
-      "name": "claude-multi-agent-flow",
-      "source": "./claude/plugins/claude-multi-agent-flow",
-      "description": "Repository story flow across two agents: Claude Code implements, Codex CLI reviews read-only, and a human owns PR and merge gates. Supports local or remote specs, configurable base branches, and project-owned verification.",
+      "name": "godmode-dev-flow",
+      "source": "./claude/plugins/godmode-dev-flow",
+      "description": "Bundled story delivery lifecycle for Claude Code. Installs four skills: project-setup (classify and bootstrap a repository), disciplined-coding (scoped diffs and verifiable success criteria), start-story-multi-agent (Claude implements, Codex reviews read-only, human owns PR and merge gates), and close-story (worktree and branch cleanup after merge).",
       "author": {
         "name": "Khanh Pham"
       },
-      "keywords": ["workflow", "worktree", "multi-agent", "codex", "review", "backlog"],
-      "category": "workflow"
-    },
-    {
-      "name": "project-setup",
-      "source": "./claude/plugins/project-setup",
-      "description": "Classify, plan, reconcile, and bootstrap a software product repository: project profile, product plan, conditional design spec, epic backlog, engineering guide, agent instructions, story templates, and a deterministic verification gate. Greenfield or existing repository.",
-      "author": {
-        "name": "Khanh Pham"
-      },
-      "keywords": ["planning", "bootstrap", "backlog", "product", "scaffolding", "agents"],
-      "category": "workflow"
-    },
-    {
-      "name": "close-story-worktree",
-      "source": "./claude/plugins/close-story-worktree",
-      "description": "Verify that a story pull request was merged, then safely remove its clean local worktree and delete the merged local branch. Refuses to act before the human merge gate.",
-      "author": {
-        "name": "Khanh Pham"
-      },
-      "keywords": ["workflow", "worktree", "git", "cleanup", "pull-request", "backlog"],
-      "category": "workflow"
-    },
-    {
-      "name": "disciplined-coding",
-      "source": "./claude/plugins/disciplined-coding",
-      "description": "Implement, fix, refactor, or review code with explicit assumptions, minimal complexity, tightly scoped diffs, and verifiable success criteria. Rigor is calibrated to risk.",
-      "author": {
-        "name": "Khanh Pham"
-      },
-      "keywords": ["coding", "review", "refactor", "verification", "discipline", "scope"],
+      "keywords": [
+        "workflow",
+        "worktree",
+        "multi-agent",
+        "codex",
+        "review",
+        "backlog",
+        "project-setup"
+      ],
       "category": "workflow"
     }
   ]
