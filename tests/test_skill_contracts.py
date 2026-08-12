@@ -233,7 +233,13 @@ class StaticContractTests(unittest.TestCase):
             scaffold = skill / "scripts" / "init-verifier.sh"
             with self.subTest(skill=skill.name):
                 self.assertTrue(scaffold.is_file(), f"missing {scaffold}")
-                self.assertTrue(scaffold.stat().st_mode & 0o111, f"{scaffold} is not executable")
+                if os.name != "nt":
+                    # NTFS carries no POSIX permission bits. The mode that ships
+                    # is the one in the index, covered by
+                    # test_skill_scripts_are_executable_in_git.
+                    self.assertTrue(
+                        scaffold.stat().st_mode & 0o111, f"{scaffold} is not executable"
+                    )
                 self.assertIn(
                     "init-verifier.sh",
                     (skill / "SKILL.md").read_text(encoding="utf-8"),
