@@ -105,6 +105,38 @@ if [ -f go.mod ]; then
   RAN=1
 fi
 
+if [ -f pom.xml ]; then
+  if [ -f ./mvnw ] && [ ! -x ./mvnw ]; then
+    echo "found ./mvnw but it is not executable; run: chmod +x mvnw" >&2
+  fi
+  if [ -x ./mvnw ]; then
+    MAVEN=./mvnw
+  elif command -v mvn >/dev/null 2>&1; then
+    MAVEN=mvn
+  else
+    echo "pom.xml exists but neither ./mvnw nor mvn is available" >&2
+    exit 2
+  fi
+  "$MAVEN" -B verify
+  RAN=1
+fi
+
+if [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  if [ -f ./gradlew ] && [ ! -x ./gradlew ]; then
+    echo "found ./gradlew but it is not executable; run: chmod +x gradlew" >&2
+  fi
+  if [ -x ./gradlew ]; then
+    GRADLE=./gradlew
+  elif command -v gradle >/dev/null 2>&1; then
+    GRADLE=gradle
+  else
+    echo "a Gradle build exists but neither ./gradlew nor gradle is available" >&2
+    exit 2
+  fi
+  "$GRADLE" --no-daemon build
+  RAN=1
+fi
+
 if [ -f pyproject.toml ] && { [ -d tests ] || [ -f pytest.ini ]; }; then
   if command -v uv >/dev/null 2>&1; then
     uv run pytest -q

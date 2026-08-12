@@ -597,6 +597,58 @@ class ShellBehaviorTests(unittest.TestCase):
                 self.assertIn("fmt", invoked)
                 self.assertIn("test", invoked)
 
+    def test_verify_prefers_a_build_wrapper_over_a_global_tool(self) -> None:
+        """A JVM project pins its build through ./gradlew or ./mvnw."""
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo(with_verifier=False)
+                (repo / "build.gradle").write_text("apply plugin: 'java'\n", encoding="utf-8")
+                log = repo / "build.log"
+                write_executable(
+                    repo / "gradlew",
+                    "#!/usr/bin/env bash\nprintf 'wrapper %s\\n' \"$*\" >> \"$ASTRO_BUILD_LOG\"\n",
+                )
+                write_executable(
+                    repo / "bin" / "gradle",
+                    "#!/usr/bin/env bash\nprintf 'global %s\\n' \"$*\" >> \"$ASTRO_BUILD_LOG\"\n",
+                )
+                env = os.environ.copy()
+                env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
+                env["ASTRO_BUILD_LOG"] = str(log)
+                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                invoked = log.read_text(encoding="utf-8")
+                self.assertIn("wrapper", invoked)
+                self.assertNotIn("global", invoked)
+
+    def test_verify_runs_a_maven_project(self) -> None:
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo(with_verifier=False)
+                (repo / "pom.xml").write_text("<project/>\n", encoding="utf-8")
+                log = repo / "maven.log"
+                write_executable(
+                    repo / "bin" / "mvn",
+                    "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"$ASTRO_BUILD_LOG\"\n",
+                )
+                env = os.environ.copy()
+                env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
+                env["ASTRO_BUILD_LOG"] = str(log)
+                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("VERIFY PASSED", result.stdout)
+                self.assertIn("verify", log.read_text(encoding="utf-8"))
+
+    def test_init_verifier_scaffolds_a_jvm_wrapper(self) -> None:
+        scaffold = ROOT / "codex" / "skills" / "project-setup" / "scripts" / "init-verifier.sh"
+        repo = self.init_repo(with_verifier=False)
+        (repo / "build.gradle.kts").write_text("plugins { java }\n", encoding="utf-8")
+        write_executable(repo / "gradlew", "#!/usr/bin/env bash\nexit 0\n")
+        result = run(["bash", str(scaffold)], cwd=repo)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        generated = (repo / "scripts" / "verify-project.sh").read_text(encoding="utf-8")
+        self.assertIn("./gradlew --no-daemon build", generated)
+
     def test_verify_reports_when_no_checks_are_discoverable(self) -> None:
         for verify in self.verify_scripts():
             with self.subTest(flow=verify.parent.parent.name):

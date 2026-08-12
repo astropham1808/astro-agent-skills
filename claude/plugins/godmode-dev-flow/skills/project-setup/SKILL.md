@@ -140,7 +140,8 @@ from the repository's own stack markers:
 ~~~
 
 The script detects Rust, Node.js with its lockfile's package manager, Go,
-Python, and .NET, writes `scripts/verify-project.sh`, and marks it executable.
+Java with its Maven or Gradle wrapper, Python, and .NET, writes
+`scripts/verify-project.sh`, and marks it executable.
 It never overwrites an existing verifier without `--force`. When no stack is
 detected it writes a `TODO` verifier that exits non-zero, so an unconfigured
 project fails loudly instead of passing silently.

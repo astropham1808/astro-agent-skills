@@ -148,7 +148,8 @@ in a fixed order:
    that already keep their checks somewhere else.
 2. `scripts/verify-project.sh`, the preferred project-owned verifier.
 3. Generic checks detected from `Cargo.toml`, `package.json` with its lockfile's
-   package manager, `go.mod`, `pyproject.toml`, or a .NET project file.
+   package manager, `go.mod`, `pom.xml` or a Gradle build, `pyproject.toml`,
+   or a .NET project file.
 
 A repository with no recognizable stack and no verifier stops with exit 2 rather
 than passing by default. A verifier that exists but lost its executable bit, a
@@ -267,7 +268,7 @@ framework, package manager, or test runner. The only integration point is the
 verifier, so any stack works if its checks can run as one command that exits
 non-zero on failure.
 
-Rust, Node.js, Go, Python, and .NET repositories are additionally detected by the
+Rust, Node.js, Go, Java, Python, and .NET repositories are additionally detected by the
 generic fallback, so they can run the flow before writing any verifier at all.
 Every other stack needs the one file, which `init-verifier.sh` will scaffold as a
 `TODO` for you to fill in.
@@ -282,6 +283,8 @@ interactive external step.
 | Python | `ruff check . && mypy . && pytest -q` |
 | Go | `go vet ./... && go test ./... && go build ./...` |
 | Rust | `cargo fmt --check && cargo clippy -- -D warnings && cargo test` |
+| Java (Maven) | `./mvnw -B verify` |
+| Java (Gradle) | `./gradlew --no-daemon build` |
 | .NET | `dotnet format --verify-no-changes && dotnet test` |
 | Monorepo | Delegate to the workspace runner, for example `pnpm -r verify` or `nx affected -t lint,test,build` |
 

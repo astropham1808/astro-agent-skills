@@ -124,6 +124,24 @@ if [ -f go.mod ]; then
   add_check 'go test ./...'
 fi
 
+if [ -f pom.xml ]; then
+  add_stack "Java (Maven)"
+  if [ -f mvnw ]; then
+    add_check './mvnw -B verify'
+  else
+    add_check 'mvn -B verify'
+  fi
+fi
+
+if [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  add_stack "Java (Gradle)"
+  if [ -f gradlew ]; then
+    add_check './gradlew --no-daemon build'
+  else
+    add_check 'gradle --no-daemon build'
+  fi
+fi
+
 if [ -f pyproject.toml ] || [ -f requirements.txt ] || [ -f setup.cfg ]; then
   add_stack "Python"
   if command -v uv >/dev/null 2>&1; then

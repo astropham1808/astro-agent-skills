@@ -57,7 +57,8 @@ Before automation, configure a deterministic repository verifier. The bundled
 1. `PROJECT_VERIFIER`, absolute or relative to the repository root.
 2. `scripts/verify-project.sh`, the preferred project-owned definition of done.
 3. generic checks detected from `Cargo.toml`, `package.json` with its lockfile's
-   package manager, `go.mod`, `pyproject.toml`, or a .NET project file.
+   package manager, `go.mod`, `pom.xml` or a Gradle build, `pyproject.toml`,
+   or a .NET project file.
 
 Use the generic path only to get moving. Scaffold a real verifier with the
 project-setup skill's `scripts/init-verifier.sh`, then own it. A repository with
