@@ -189,6 +189,55 @@ class StaticContractTests(unittest.TestCase):
                             f"{copy} executable bit differs from {original}",
                         )
 
+    def test_delivery_flows_share_one_verifier(self) -> None:
+        """Verification is stack-neutral, so both flows ship the same resolver."""
+        claude_verify = CLAUDE_SKILL / "scripts" / "verify.sh"
+        codex_verify = CODEX_FLOW / "scripts" / "verify.sh"
+        self.assertEqual(
+            codex_verify.read_bytes(),
+            claude_verify.read_bytes(),
+            f"{claude_verify} drifted from {codex_verify}",
+        )
+        self.assertEqual(
+            codex_verify.stat().st_mode & 0o111,
+            claude_verify.stat().st_mode & 0o111,
+        )
+        text = codex_verify.read_text(encoding="utf-8")
+        for contract in ("PROJECT_VERIFIER", "scripts/verify-project.sh", "init-verifier.sh"):
+            self.assertIn(contract, text)
+
+    def test_project_setup_ships_a_verifier_scaffold(self) -> None:
+        for skill in (
+            ROOT / "codex" / "skills" / "project-setup",
+            GODMODE / "skills" / "project-setup",
+        ):
+            scaffold = skill / "scripts" / "init-verifier.sh"
+            with self.subTest(skill=skill.name):
+                self.assertTrue(scaffold.is_file(), f"missing {scaffold}")
+                self.assertTrue(scaffold.stat().st_mode & 0o111, f"{scaffold} is not executable")
+                self.assertIn(
+                    "init-verifier.sh",
+                    (skill / "SKILL.md").read_text(encoding="utf-8"),
+                )
+
+    @unittest.skipIf(shutil.which("git") is None, "git is unavailable")
+    def test_skill_scripts_are_executable_in_git(self) -> None:
+        """Skill scripts are invoked directly, so the mode must survive a clone.
+
+        A checkout on a filesystem without permission bits, such as a Windows
+        drive under WSL, silently stages them as 100644.
+        """
+        listing = run(["git", "ls-files", "-s"], cwd=ROOT)
+        if listing.returncode != 0:
+            self.skipTest("not a Git checkout")
+        for line in listing.stdout.splitlines():
+            mode, _, remainder = line.partition(" ")
+            path = remainder.split("\t", 1)[-1]
+            if "/scripts/" not in path or not path.endswith(".sh"):
+                continue
+            with self.subTest(path=path):
+                self.assertEqual(mode, "100755", f"{path} is not executable in the index")
+
     def test_taxonomy_represents_every_artifact(self) -> None:
         taxonomy = (ROOT / "docs" / "SKILL_TAXONOMY.md").read_text(encoding="utf-8")
         expected = {
@@ -235,7 +284,7 @@ class StaticContractTests(unittest.TestCase):
 
 @unittest.skipIf(os.name == "nt", "run shell behavior tests under WSL or POSIX")
 class ShellBehaviorTests(unittest.TestCase):
-    def init_repo(self, verifier_exit: int = 0) -> Path:
+    def init_repo(self, verifier_exit: int = 0, with_verifier: bool = True) -> Path:
         temp = tempfile.TemporaryDirectory(prefix="astro-skill-test-")
         self.addCleanup(temp.cleanup)
         repo = Path(temp.name)
@@ -247,11 +296,12 @@ class ShellBehaviorTests(unittest.TestCase):
             check=True,
         )
         (repo / "README.md").write_text("# Fixture\n", encoding="utf-8")
-        write_executable(
-            repo / "scripts" / "verify-project.sh",
-            "#!/usr/bin/env bash\n"
-            f"echo fixture-verifier\nexit {verifier_exit}\n",
-        )
+        if with_verifier:
+            write_executable(
+                repo / "scripts" / "verify-project.sh",
+                "#!/usr/bin/env bash\n"
+                f"echo fixture-verifier\nexit {verifier_exit}\n",
+            )
         run(["git", "add", "."], cwd=repo, check=True)
         run(["git", "commit", "-m", "fixture"], cwd=repo, check=True)
         return repo
@@ -497,6 +547,108 @@ class ShellBehaviorTests(unittest.TestCase):
                 else:
                     codex_log = (mock_root / "codex.log").read_text(encoding="utf-8")
                     self.assertEqual(codex_log.count("-s read-only"), 1)
+
+    def verify_scripts(self) -> tuple[Path, ...]:
+        return (CLAUDE_SKILL / "scripts" / "verify.sh", CODEX_FLOW / "scripts" / "verify.sh")
+
+    def test_verify_prefers_the_project_verifier_override(self) -> None:
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo()
+                write_executable(
+                    repo / "ci" / "check.sh",
+                    "#!/usr/bin/env bash\necho override-verifier\n",
+                )
+                env = os.environ.copy()
+                env["PROJECT_VERIFIER"] = "ci/check.sh"
+                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("override-verifier", result.stdout)
+                self.assertNotIn("fixture-verifier", result.stdout)
+
+    def test_verify_rejects_a_non_executable_project_verifier(self) -> None:
+        """A checkout that lost the executable bit must say so, not silently skip."""
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo()
+                target = repo / "scripts" / "verify-project.sh"
+                target.chmod(target.stat().st_mode & ~0o111)
+                result = run(["bash", str(verify), str(repo)], cwd=repo)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("not executable", result.stderr)
+
+    def test_verify_falls_back_to_a_detected_stack(self) -> None:
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo(with_verifier=False)
+                (repo / "Cargo.toml").write_text("[package]\n", encoding="utf-8")
+                log = repo / "cargo.log"
+                write_executable(
+                    repo / "bin" / "cargo",
+                    "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"$ASTRO_CARGO_LOG\"\n",
+                )
+                env = os.environ.copy()
+                env["PATH"] = str(repo / "bin") + os.pathsep + env["PATH"]
+                env["ASTRO_CARGO_LOG"] = str(log)
+                result = run(["bash", str(verify), str(repo)], cwd=repo, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("VERIFY PASSED", result.stdout)
+                invoked = log.read_text(encoding="utf-8")
+                self.assertIn("fmt", invoked)
+                self.assertIn("test", invoked)
+
+    def test_verify_reports_when_no_checks_are_discoverable(self) -> None:
+        for verify in self.verify_scripts():
+            with self.subTest(flow=verify.parent.parent.name):
+                repo = self.init_repo(with_verifier=False)
+                result = run(["bash", str(verify), str(repo)], cwd=repo)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("init-verifier.sh", result.stderr)
+
+    def test_init_verifier_scaffolds_without_clobbering(self) -> None:
+        scaffold = ROOT / "codex" / "skills" / "project-setup" / "scripts" / "init-verifier.sh"
+        repo = self.init_repo(with_verifier=False)
+        (repo / "package.json").write_text(
+            '{"name":"fixture","scripts":{"lint":"true","test":"true"}}',
+            encoding="utf-8",
+        )
+        (repo / "pnpm-lock.yaml").write_text("lockfileVersion: 9\n", encoding="utf-8")
+
+        created = run(["bash", str(scaffold)], cwd=repo)
+        self.assertEqual(created.returncode, 0, created.stderr)
+        target = repo / "scripts" / "verify-project.sh"
+        self.assertTrue(target.is_file())
+        self.assertTrue(target.stat().st_mode & 0o111, "scaffolded verifier is not executable")
+        generated = target.read_text(encoding="utf-8")
+        self.assertIn("pnpm run lint", generated)
+        self.assertIn("pnpm run test", generated)
+        self.assertIn("# pnpm run typecheck", generated)
+        syntax = run(["bash", "-n", str(target)], cwd=repo)
+        self.assertEqual(syntax.returncode, 0, syntax.stderr)
+
+        target.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+        kept = run(["bash", str(scaffold)], cwd=repo)
+        self.assertEqual(kept.returncode, 0, kept.stderr)
+        self.assertEqual(target.read_text(encoding="utf-8"), "#!/usr/bin/env bash\nexit 0\n")
+
+        preview = run(["bash", str(scaffold), "--print"], cwd=repo)
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertIn("pnpm run lint", preview.stdout)
+        self.assertEqual(target.read_text(encoding="utf-8"), "#!/usr/bin/env bash\nexit 0\n")
+
+        forced = run(["bash", str(scaffold), "--force"], cwd=repo)
+        self.assertEqual(forced.returncode, 0, forced.stderr)
+        self.assertIn("pnpm run lint", target.read_text(encoding="utf-8"))
+
+    def test_init_verifier_accepts_an_explicit_root(self) -> None:
+        """Paths stay dynamic, so scaffolding works from any working directory."""
+        scaffold = ROOT / "codex" / "skills" / "project-setup" / "scripts" / "init-verifier.sh"
+        repo = self.init_repo(with_verifier=False)
+        (repo / "go.mod").write_text("module fixture\n", encoding="utf-8")
+        result = run(["bash", str(scaffold), "--root", str(repo)], cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        generated = (repo / "scripts" / "verify-project.sh").read_text(encoding="utf-8")
+        self.assertIn("go test ./...", generated)
 
     def test_agent_toast_notifies_through_mocked_os_command(self) -> None:
         temp = tempfile.TemporaryDirectory(prefix="agent-toast-test-")

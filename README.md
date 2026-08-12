@@ -131,12 +131,29 @@ available, since verification runs the project's real commands.
 
 The target project must also provide:
 
-- executable `scripts/verify-project.sh`, the only definition of done;
 - `specs/<ID>.md`, the local execution contract;
 - `CLAUDE.md` and `AGENTS.md` carrying the same repository rules, so both agents
   receive the same contract;
+- a definition of done, resolved as described below. A project-owned
+  `scripts/verify-project.sh` is strongly preferred but not required to start;
 - optional executable `scripts/format-file.sh` for the Claude edit hook. Without
   it the hook is a safe no-op.
+
+### How verification resolves
+
+Both flows share one `scripts/verify.sh`, which resolves the definition of done
+in a fixed order:
+
+1. `PROJECT_VERIFIER`, absolute or relative to the repository root, for projects
+   that already keep their checks somewhere else.
+2. `scripts/verify-project.sh`, the preferred project-owned verifier.
+3. Generic checks detected from `Cargo.toml`, `package.json` with its lockfile's
+   package manager, `go.mod`, `pyproject.toml`, or a .NET project file.
+
+A repository with no recognizable stack and no verifier stops with exit 2 rather
+than passing by default. A verifier that exists but lost its executable bit, a
+common result of a Windows checkout, also stops, with a `chmod +x` hint instead
+of being silently skipped.
 
 ### Environment variables
 
@@ -146,8 +163,38 @@ The target project must also provide:
 | `WORKTREE_PATH` | `.claude/worktrees/<ID>` or `.agent-worktrees/<ID>` | Where the story worktree is created. |
 | `FETCH_BASE` | `1` | Set to `0` to pin the base offline instead of fetching it. |
 | `SOT_QUERY` | unset | One narrow Notion query, Jira JQL, or issue URL. The agent uses it exactly once to write the local spec. |
+| `PROJECT_VERIFIER` | unset | Path to a verifier outside `scripts/verify-project.sh`. Relative paths resolve against the repository root. |
+
+Every path is resolved at run time from `git rev-parse --show-toplevel` and the
+script's own location, so the skills work from any checkout directory, any user
+account, and any clone name. Paths containing spaces are supported.
 
 ## End-to-end usage
+
+### 0. Quickstart when the repository has none of these files
+
+A repository that has never seen these skills needs one file, and even that can
+be generated. From the project root:
+
+~~~bash
+# preview what would be generated, change nothing
+"${CLAUDE_SKILL_DIR}/scripts/init-verifier.sh" --print
+
+# write scripts/verify-project.sh and mark it executable
+"${CLAUDE_SKILL_DIR}/scripts/init-verifier.sh"
+~~~
+
+The scaffold lives in the project-setup skill. It detects the stack from the
+repository's own markers, writes the matching lint, typecheck, test, and build
+commands, and never overwrites an existing verifier without `--force`. When it
+finds no recognizable stack it writes a `TODO` verifier that exits non-zero, so
+an unconfigured project fails loudly rather than reporting a fake pass.
+
+Review the generated commands, run `scripts/verify-project.sh` once, then move on
+to the full setup below. If your checks already live elsewhere, skip the file
+entirely and point `PROJECT_VERIFIER` at them.
+
+Use `--root <path>` to scaffold a repository other than the current directory.
 
 ### 1. Prepare the project once
 
@@ -216,9 +263,14 @@ remote branch unless you ask.
 ## Tech stack fit
 
 The flow is stack-neutral by construction. No skill hardcodes a language,
-framework, package manager, or test runner. The only integration point is
-`scripts/verify-project.sh`, so any stack works if its checks can run as one
-command that exits non-zero on failure.
+framework, package manager, or test runner. The only integration point is the
+verifier, so any stack works if its checks can run as one command that exits
+non-zero on failure.
+
+Rust, Node.js, Go, Python, and .NET repositories are additionally detected by the
+generic fallback, so they can run the flow before writing any verifier at all.
+Every other stack needs the one file, which `init-verifier.sh` will scaffold as a
+`TODO` for you to fill in.
 
 What actually constrains adoption is the environment, not the language: a POSIX
 shell, Git worktree support, and a toolchain that runs locally without a paid or
@@ -244,6 +296,32 @@ Stacks that need extra care:
 - Repositories whose tests need live credentials or paid services. Gate those
   behind a separate command and keep the story verifier hermetic.
 - Non-software repositories, which project-setup explicitly does not cover.
+
+### Working across machines and operating systems
+
+Nothing in the skills is tied to one machine, user account, or checkout path.
+Repository roots come from `git rev-parse --show-toplevel`, skill assets are
+addressed relative to the running script, and the worktree location, base branch,
+and verifier are all overridable by environment variable. Two developers can use
+different clone paths, different package managers, and different verifiers on the
+same repository.
+
+The scripts target POSIX shell and stay compatible with the Bash 3.2 that ships
+with macOS. Practical notes per platform:
+
+| Platform | Notes |
+|---|---|
+| macOS | Works as is. Bash 3.2 is enough; no Homebrew Bash required. |
+| Linux | Works as is. |
+| Windows | Run everything inside WSL. The scripts need `git worktree`, executable bits, and a POSIX shell. |
+
+On Windows, prefer a clone inside the Linux filesystem, for example
+`~/projects/app`, over a path under `/mnt/c` or `/mnt/d`. Repositories on a
+Windows drive hit two recurring problems: checkouts arrive with CRLF endings,
+which makes `bash` fail with `syntax error near unexpected token $'do\r'`, and
+the executable bit may not persist depending on the mount options. If you must
+work from a Windows drive, commit a `.gitattributes` with `* text=auto eol=lf`
+and set `git config core.autocrlf false` on that clone.
 
 ## Repository layout
 
