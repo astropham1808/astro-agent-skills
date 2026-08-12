@@ -13,18 +13,17 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CLAUDE_SKILL = (
-    ROOT
-    / "claude"
-    / "plugins"
-    / "claude-multi-agent-flow"
-    / "skills"
-    / "claude-multi-agent-flow"
-)
+GODMODE = ROOT / "claude" / "plugins" / "godmode-dev-flow"
+CLAUDE_SKILL = GODMODE / "skills" / "start-story-multi-agent"
 CODEX_FLOW = ROOT / "codex" / "skills" / "codex-multi-agents-flow"
 AGENT_TOAST = ROOT / "claude" / "plugins" / "agent-toast"
-# Skills that ship on both platforms under one name, sharing a single payload.
-PORTED_SKILLS = ("project-setup", "close-story-worktree", "disciplined-coding")
+# Skills that ship on both platforms sharing a single payload, as
+# (codex skill directory, Claude skill directory under godmode-dev-flow).
+PORTED_SKILLS = (
+    ("project-setup", "project-setup"),
+    ("close-story-worktree", "close-story"),
+    ("disciplined-coding", "disciplined-coding"),
+)
 
 
 def run(
@@ -80,27 +79,20 @@ class StaticContractTests(unittest.TestCase):
         )
         entries = {entry["name"]: entry for entry in marketplace["plugins"]}
         self.assertNotIn("version", entries["agent-toast"])
-        self.assertNotIn("version", entries["claude-multi-agent-flow"])
+        self.assertNotIn("version", entries["godmode-dev-flow"])
 
         toast = json.loads(
             (AGENT_TOAST / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         flow = json.loads(
-            (
-                ROOT
-                / "claude"
-                / "plugins"
-                / "claude-multi-agent-flow"
-                / ".claude-plugin"
-                / "plugin.json"
-            ).read_text(encoding="utf-8")
+            (GODMODE / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         self.assertEqual(toast["version"], "0.4.1")
-        self.assertEqual(flow["version"], "0.2.0")
+        self.assertEqual(flow["version"], "1.0.0")
         self.assertNotIn("category", toast)
         self.assertNotIn("category", flow)
         self.assertEqual(entries["agent-toast"]["category"], "integration")
-        self.assertEqual(entries["claude-multi-agent-flow"]["category"], "workflow")
+        self.assertEqual(entries["godmode-dev-flow"]["category"], "workflow")
 
         # Same rule for every plugin: version in plugin.json, category in the catalog.
         for name, entry in entries.items():
@@ -172,9 +164,9 @@ class StaticContractTests(unittest.TestCase):
 
     def test_ported_skills_share_one_payload(self) -> None:
         """A skill shipped on both platforms duplicates prose, never behavior."""
-        for name in PORTED_SKILLS:
+        for name, claude_name in PORTED_SKILLS:
             codex_skill = ROOT / "codex" / "skills" / name
-            claude_skill = ROOT / "claude" / "plugins" / name / "skills" / name
+            claude_skill = GODMODE / "skills" / claude_name
             for payload in ("scripts", "assets", "references"):
                 source = codex_skill / payload
                 if not source.is_dir():
@@ -204,15 +196,20 @@ class StaticContractTests(unittest.TestCase):
             "project-setup",
             "codex-multi-agents-flow",
             "close-story-worktree",
-            "claude-multi-agent-flow",
+            "start-story-multi-agent",
+            "close-story",
+            "godmode-dev-flow",
             "agent-toast",
         }
         for name in expected:
             with self.subTest(name=name):
                 self.assertIn(f"[{name}]", taxonomy)
-        for name in PORTED_SKILLS:
-            with self.subTest(name=name, platform="claude"):
-                self.assertIn(f"](../claude/plugins/{name}/)", taxonomy)
+        for _, claude_name in PORTED_SKILLS:
+            with self.subTest(name=claude_name, platform="claude"):
+                self.assertIn(
+                    f"](../claude/plugins/godmode-dev-flow/skills/{claude_name}/)",
+                    taxonomy,
+                )
 
     def test_local_markdown_links_resolve(self) -> None:
         pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")

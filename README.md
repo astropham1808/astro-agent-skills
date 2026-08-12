@@ -28,13 +28,20 @@ and are available on the next turn.
 
 ## Claude Code plugins
 
-| Category | Plugin | Scope |
-|---|---|---|
-| Foundation | [disciplined-coding](./claude/plugins/disciplined-coding/) | Cross-stack coding quality, scope control, and verification. |
-| Planning and setup | [project-setup](./claude/plugins/project-setup/) | Cross-stack product and repository planning. |
-| Delivery orchestration | [claude-multi-agent-flow](./claude/plugins/claude-multi-agent-flow/) | Claude implementer + read-only Codex reviewer with configurable source, base branch, and project verification. |
-| Repository lifecycle | [close-story-worktree](./claude/plugins/close-story-worktree/) | GitHub PR and Git worktree cleanup. |
-| Platform integration | [agent-toast](./claude/plugins/agent-toast/) | Claude lifecycle notifications on Windows/WSL, macOS, and Linux. |
+| Plugin | Scope |
+|---|---|
+| [godmode-dev-flow](./claude/plugins/godmode-dev-flow/) | The full story delivery lifecycle, four skills in one install. |
+| [agent-toast](./claude/plugins/agent-toast/) | Claude lifecycle notifications on Windows/WSL, macOS, and Linux. No skills; hooks only. |
+
+godmode-dev-flow bundles these skills. Claude invokes a bundled skill as
+`plugin:skill`, so the call names are:
+
+| Category | Skill | Call | Scope |
+|---|---|---|---|
+| Planning and setup | [project-setup](./claude/plugins/godmode-dev-flow/skills/project-setup/) | `godmode-dev-flow:project-setup` | Cross-stack product and repository planning. |
+| Foundation | [disciplined-coding](./claude/plugins/godmode-dev-flow/skills/disciplined-coding/) | `godmode-dev-flow:disciplined-coding` | Cross-stack coding quality, scope control, and verification. |
+| Delivery orchestration | [start-story-multi-agent](./claude/plugins/godmode-dev-flow/skills/start-story-multi-agent/) | `godmode-dev-flow:start-story-multi-agent` | Claude implementer + read-only Codex reviewer with configurable source, base branch, and project verification. |
+| Repository lifecycle | [close-story](./claude/plugins/godmode-dev-flow/skills/close-story/) | `godmode-dev-flow:close-story` | GitHub PR and Git worktree cleanup after the human merge gate. |
 
 Every Codex skill has a Claude Code counterpart. The two delivery-orchestration
 skills stay separate because they automate different provider CLIs; the other
@@ -45,17 +52,23 @@ with the Codex originals.
 
 ~~~text
 /plugin marketplace add https://github.com/astropham1808/astro-agent-skills
-/plugin install disciplined-coding@astro-agent-skills
-/plugin install project-setup@astro-agent-skills
-/plugin install claude-multi-agent-flow@astro-agent-skills
-/plugin install close-story-worktree@astro-agent-skills
+/plugin install godmode-dev-flow@astro-agent-skills
 /plugin install agent-toast@astro-agent-skills
 ~~~
 
-Install only the plugins you want; each is independent.
-
 Pull later changes with /plugin marketplace update astro-agent-skills, then update
 the installed plugin with /plugin update <plugin>@astro-agent-skills.
+
+Upgrading from the pre-2.0 catalog: the four separate story plugins were merged
+into godmode-dev-flow. Uninstall the old ones first, since plugin names are the
+install key.
+
+~~~text
+/plugin uninstall claude-multi-agent-flow@astro-agent-skills
+/plugin uninstall close-story-worktree@astro-agent-skills
+/plugin uninstall disciplined-coding@astro-agent-skills
+/plugin uninstall project-setup@astro-agent-skills
+~~~
 
 agent-toast can be configured with an agent name, optional session label,
 optional PNG icon path, and optional beep. Reopen its settings with

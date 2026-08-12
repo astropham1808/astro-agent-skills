@@ -1,5 +1,5 @@
 ---
-name: close-story-worktree
+name: close-story
 description: Safely clean up a story worktree and branch after its pull request has been reviewed and merged. Use this skill whenever the user asks to close, clean up, or tear down a finished story (AL-xxx, HB-xxx, or any PREFIX-nnn ID), says "PR merged rồi", "dọn worktree", "clean up the branch", "remove the worktree", "xong task này rồi", or asks whether a story is safe to delete. Handles codex/ID, worktree-ID, claude/ID, and explicit custom branch or worktree names. Never use before the human merge gate.
 ---
 
@@ -80,5 +80,5 @@ The script verifies merge state and targets in both modes.
 
 ## Related
 
-Pairs with `claude-multi-agent-flow`, which opens the story worktree this skill
+Pairs with `start-story-multi-agent`, which opens the story worktree this skill
 closes. That flow ends at the human PR gate; this one starts after the merge.
