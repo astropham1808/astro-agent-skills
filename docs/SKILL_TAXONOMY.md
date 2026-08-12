@@ -37,7 +37,7 @@ integration it uses to solve that problem.
 | [close-story-worktree](../codex/skills/close-story-worktree/) | Codex | Repository lifecycle | GitHub CLI/Git-specific | gh, PR merge state, worktrees, and local branches are the contract. | Keep; do not generalize into a generic coding skill. |
 | [godmode-dev-flow](../claude/plugins/godmode-dev-flow/) | Claude Code | Delivery orchestration | Claude + Codex + Git worktree | Distribution bundle, not a skill. Carries the four story lifecycle skills below so one install covers setup through cleanup. | Keep as the single namespace for Claude story skills; add new lifecycle skills here rather than as new plugins. |
 | [agent-toast](../claude/plugins/agent-toast/) | Claude Code | Platform integration | Claude hooks + Windows/macOS/Linux | OS notification commands and Claude hook variables are required by the feature. | Keep as a separate plugin; it ships no skills and owns its own userConfig. Use mocked OS commands in CI and live OS canaries before release. |
-| [start-story-multi-agent](../claude/plugins/godmode-dev-flow/skills/start-story-multi-agent/) | Claude Code | Delivery orchestration | Claude + Codex + Git worktree | Provider mechanics are intentional. Base branch, source-of-truth query, verifier, and formatter are project-configured. | Keep as the Claude adapter; verify installed paths, stage gates, and human PR ownership hermetically. |
+| [start-story-multi-agent](../claude/plugins/godmode-dev-flow/skills/start-story-multi-agent/) | Claude Code | Delivery orchestration | Claude + Codex + Git worktree | Provider mechanics are intentional. Base branch, source-of-truth query, verifier, and formatter are project-configured, with a shared stack-neutral verifier fallback. | Keep as the Claude adapter; verify installed paths, stage gates, and human PR ownership hermetically. |
 | [project-setup](../claude/plugins/godmode-dev-flow/skills/project-setup/) | Claude Code | Planning and setup | Cross-stack, repository-aware | Port of the Codex skill. Shares its scripts, assets, and references byte for byte; only SKILL.md and the plugin manifest differ. | Keep in sync with the Codex skill; the shared payload is the single source of truth. |
 | [close-story](../claude/plugins/godmode-dev-flow/skills/close-story/) | Claude Code | Repository lifecycle | GitHub CLI/Git-specific | Port of the Codex close-story-worktree skill, sharing the same cleanup script. Branch naming stays convention-agnostic across codex/, worktree-, and claude/ prefixes. | Keep; do not generalize into a generic coding skill. |
 | [disciplined-coding](../claude/plugins/godmode-dev-flow/skills/disciplined-coding/) | Claude Code | Foundation | Cross-stack | Port of the Codex skill. Prose only, no scripts or assets. | Keep as the default quality/practice skill on both platforms. |
@@ -67,8 +67,10 @@ integration it uses to solve that problem.
 
 - Claude story specs no longer prescribe Rust, Playwright, or a particular test
   command; each project supplies its own executable acceptance checks.
-- The Claude flow verifier and pre-commit template no longer run a fixed Rust/Node matrix. They delegate to
-  the target project's scripts/verify-project.sh.
+- The Claude flow verifier and pre-commit template no longer run a fixed Rust/Node matrix. They resolve
+  PROJECT_VERIFIER, then the target project's scripts/verify-project.sh, then generic
+  checks detected from the repository's own stack markers. Both delivery flows ship the
+  same verify.sh, since verification is stack-neutral and provider-neutral.
 - The Claude PostToolUse formatter hook no longer assumes rustfmt or Prettier. A
   target project may provide scripts/format-file.sh; otherwise the hook is a safe
   no-op.

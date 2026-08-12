@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# verify.sh - resolve and run the definition of done for a target project.
+#
+# Resolution order:
+#   1. $PROJECT_VERIFIER, absolute or relative to the repository root
+#   2. <repository root>/scripts/verify-project.sh
+#   3. generic checks detected from the repository's stack markers
+#
+# Keep stack-specific commands in the target project's verifier. The generic
+# checks exist so a repository can run the flow before it owns one, not as a
+# replacement for a project-owned definition of done.
 set -euo pipefail
 
 TARGET=${1:-.}
@@ -6,8 +16,35 @@ cd "$TARGET"
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
-if [ -x "$ROOT/scripts/verify-project.sh" ]; then
-  exec "$ROOT/scripts/verify-project.sh"
+resolve_path() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$ROOT/$1" ;;
+  esac
+}
+
+if [ -n "${PROJECT_VERIFIER:-}" ]; then
+  VERIFIER=$(resolve_path "$PROJECT_VERIFIER")
+  if [ ! -f "$VERIFIER" ]; then
+    echo "PROJECT_VERIFIER does not exist: $VERIFIER" >&2
+    exit 2
+  fi
+  if [ ! -x "$VERIFIER" ]; then
+    echo "PROJECT_VERIFIER is not executable: $VERIFIER" >&2
+    echo "run: chmod +x \"$VERIFIER\"" >&2
+    exit 2
+  fi
+  exec "$VERIFIER"
+fi
+
+PROJECT_SCRIPT="$ROOT/scripts/verify-project.sh"
+if [ -x "$PROJECT_SCRIPT" ]; then
+  exec "$PROJECT_SCRIPT"
+fi
+if [ -f "$PROJECT_SCRIPT" ]; then
+  echo "found $PROJECT_SCRIPT but it is not executable" >&2
+  echo "run: chmod +x scripts/verify-project.sh" >&2
+  exit 2
 fi
 
 RAN=0
@@ -63,7 +100,40 @@ if [ -f go.mod ]; then
     echo "$UNFORMATTED" >&2
     exit 1
   fi
+  go vet ./...
   go test ./...
+  RAN=1
+fi
+
+if [ -f pom.xml ]; then
+  if [ -f ./mvnw ] && [ ! -x ./mvnw ]; then
+    echo "found ./mvnw but it is not executable; run: chmod +x mvnw" >&2
+  fi
+  if [ -x ./mvnw ]; then
+    MAVEN=./mvnw
+  elif command -v mvn >/dev/null 2>&1; then
+    MAVEN=mvn
+  else
+    echo "pom.xml exists but neither ./mvnw nor mvn is available" >&2
+    exit 2
+  fi
+  "$MAVEN" -B verify
+  RAN=1
+fi
+
+if [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  if [ -f ./gradlew ] && [ ! -x ./gradlew ]; then
+    echo "found ./gradlew but it is not executable; run: chmod +x gradlew" >&2
+  fi
+  if [ -x ./gradlew ]; then
+    GRADLE=./gradlew
+  elif command -v gradle >/dev/null 2>&1; then
+    GRADLE=gradle
+  else
+    echo "a Gradle build exists but neither ./gradlew nor gradle is available" >&2
+    exit 2
+  fi
+  "$GRADLE" --no-daemon build
   RAN=1
 fi
 
@@ -79,11 +149,20 @@ if [ -f pyproject.toml ] && { [ -d tests ] || [ -f pytest.ini ]; }; then
   RAN=1
 fi
 
+if ls ./*.sln >/dev/null 2>&1 || ls ./*.csproj >/dev/null 2>&1; then
+  command -v dotnet >/dev/null 2>&1 || {
+    echo "a .NET project exists but dotnet is unavailable" >&2
+    exit 2
+  }
+  dotnet test
+  RAN=1
+fi
+
 if [ "$RAN" -eq 0 ]; then
   echo "no generic verification checks were discovered" >&2
-  echo "create executable scripts/verify-project.sh with project-specific checks" >&2
+  echo "create executable scripts/verify-project.sh with project-specific checks," >&2
+  echo "or scaffold one with the project-setup skill's scripts/init-verifier.sh" >&2
   exit 2
 fi
 
 echo "VERIFY PASSED $(git rev-parse --short HEAD)"
-
