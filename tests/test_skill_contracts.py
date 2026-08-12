@@ -17,9 +17,25 @@ GODMODE = ROOT / "claude" / "plugins" / "godmode-dev-flow"
 CLAUDE_SKILL = GODMODE / "skills" / "start-story-multi-agent"
 CODEX_FLOW = ROOT / "codex" / "skills" / "codex-multi-agents-flow"
 AGENT_TOAST = ROOT / "claude" / "plugins" / "agent-toast"
-# The shell under test. macOS ships Bash 3.2, so CI runs the suite against it
-# explicitly to keep the scripts free of Bash 4 syntax.
-BASH = os.environ.get("ASTRO_BASH", "bash")
+def resolve_bash() -> str:
+    """The shell under test.
+
+    macOS ships Bash 3.2, so CI pins ASTRO_BASH to it and keeps Bash 4 syntax out
+    of the scripts. On Windows, a bare "bash" resolves to the System32 WSL
+    launcher, which exits 1 with no output when no distribution is installed, so
+    prefer Git Bash when it is present.
+    """
+    override = os.environ.get("ASTRO_BASH")
+    if override:
+        return override
+    if os.name == "nt":
+        git_bash = Path(r"C:\Program Files\Git\bin\bash.exe")
+        if git_bash.is_file():
+            return str(git_bash)
+    return "bash"
+
+
+BASH = resolve_bash()
 # Skills that ship on both platforms sharing a single payload, as
 # (codex skill directory, Claude skill directory under godmode-dev-flow).
 PORTED_SKILLS = (

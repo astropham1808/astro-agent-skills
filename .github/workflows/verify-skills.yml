@@ -56,6 +56,10 @@ jobs:
             exit 1
           fi
       - name: Run static contract tests
+        env:
+          # A bare "bash" here is the System32 WSL launcher, which exits 1 with
+          # no output when no distribution is installed.
+          ASTRO_BASH: 'C:\Program Files\Git\bin\bash.exe'
         run: python tests/test_skill_contracts.py
 
   whitespace:
