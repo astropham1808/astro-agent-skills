@@ -23,10 +23,19 @@ Ask only questions that cannot be answered from local evidence. Establish:
 5. Source of truth: local request, Notion, issue tracker, existing documents, or a combination.
 6. Artifact language.
 7. Delivery model: single-agent, dual-agent, or multi-agent.
+8. Audience and how success is judged. A solo craft project and a product with paying users need different amounts of ceremony; state which this is.
 
 Read [references/classification-and-discovery.md](references/classification-and-discovery.md) when requirements are incomplete or product type is ambiguous.
 
-Persist the result in `docs/PROJECT_PROFILE.md`. Treat this classification as provisional until the user approves it.
+Persist the result in `docs/PROJECT_PROFILE.md`, including decisions already rejected so later sessions do not re-propose them. Treat this classification as provisional until the user approves it.
+
+## Find the riskiest assumption
+
+Before drafting a backlog, name the single assumption that, if false, kills the project. It is usually a technical unknown: whether an API can be intercepted, a latency budget is reachable, or an integration exposes the needed data.
+
+Make that story number one and do not reorder it. A backlog ordered by feature value instead of risk can spend months building on a foundation that was never verified. Its Done-when is a command that passes or fails, with no interpretation.
+
+If nothing in the project is technically risky, say so explicitly in the profile instead of inventing a spike.
 
 ## Choose the workflow
 
@@ -84,6 +93,20 @@ Create `docs/DESIGN_SPEC.md` for products with a user interface. Tailor its conc
 
 Use the templates under `assets/` as starting points, not as authority over existing project evidence.
 
+## Make Done-when machine-checkable
+
+Every acceptance criterion is a command or an artifact path. "Works correctly", "looks good", and "is performant" let an agent grade its own work.
+
+| Story kind | Done-when |
+|---|---|
+| Logic | `<test command> --filter <suite>` passes |
+| API | `curl ... \| jq -e '.field'` exits 0, or a contract test passes |
+| CLI | exit code and expected stdout, asserted in a script |
+| Performance | `time <command>` under a stated number, recorded in notes |
+| UI | a screenshot artifact a human reviews, plus any testable behavior |
+
+UI is the honest exception: feel and smoothness are not machine-checkable. Require the artifact and state that a human is the gate instead of faking a test.
+
 ## Configure delivery
 
 Read [references/delivery-models.md](references/delivery-models.md) before recommending an agent workflow.
@@ -94,7 +117,7 @@ Default to the smallest adequate model:
 - Dual-agent for one important story requiring independent review.
 - Multi-agent for multiple ready, independent stories with reliable verification.
 
-For multi-agent delivery, keep one implementation owner, branch, and worktree per story. Reviewers and verifiers remain read-only unless ownership is explicitly transferred. Keep PR creation and merge as human gates.
+For multi-agent delivery, keep one implementation owner, branch, and worktree per story. Reviewers and verifiers remain read-only unless ownership is explicitly transferred. Cap review and fix at two rounds, then bring in the human. Keep PR creation and merge as human gates.
 
 When a remote source such as Notion is used, fetch the narrowest sufficient story context once, record its ID or URL in the local spec, and make the local spec the execution contract.
 
@@ -153,13 +176,14 @@ checks, run the verifier once, and only then install the flow's commit gate.
 
 Return:
 
-- mode, product type, lifecycle, surfaces, and source of truth;
+- mode, product type, lifecycle, surfaces, source of truth, and audience;
+- the riskiest assumption and the story that tests it;
 - artifacts adopted, adapted, added, intentionally omitted, or still unknown;
-- key product and technical decisions;
+- key product and technical decisions, and what was rejected;
 - backlog shape and dependency risks;
 - chosen delivery model and ownership rules;
 - exact verification commands;
 - unresolved human gates;
 - files created or modified.
 
-Do not claim setup is complete while required decisions remain hidden, validation failed, or the user has not approved material assumptions.
+Do not claim setup is complete while required decisions remain hidden, validation failed, the user has not approved material assumptions, or the riskiest assumption has no story.
