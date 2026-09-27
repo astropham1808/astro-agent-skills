@@ -108,7 +108,7 @@ class StaticContractTests(unittest.TestCase):
             (GODMODE / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         self.assertEqual(toast["version"], "0.4.1")
-        self.assertEqual(flow["version"], "1.0.0")
+        self.assertEqual(flow["version"], "1.1.0")
         self.assertNotIn("category", toast)
         self.assertNotIn("category", flow)
         self.assertEqual(entries["agent-toast"]["category"], "integration")
