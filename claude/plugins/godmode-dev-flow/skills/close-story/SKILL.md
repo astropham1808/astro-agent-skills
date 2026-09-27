@@ -1,6 +1,6 @@
 ---
 name: close-story
-description: Safely clean up a story worktree and branch after its pull request has been reviewed and merged. Use this skill whenever the user asks to close, clean up, or tear down a finished story (AL-xxx, HB-xxx, or any PREFIX-nnn ID), says "PR merged rồi", "dọn worktree", "clean up the branch", "remove the worktree", "xong task này rồi", or asks whether a story is safe to delete. Handles codex/ID, worktree-ID, claude/ID, and explicit custom branch or worktree names. Never use before the human merge gate.
+description: Safely clean up a story worktree or merged local branch after its pull request has been reviewed and merged. Use when the user asks to close a finished story, remove a merged worktree, or delete a merged local branch even when it has no story ID. Handles story IDs and explicit branch names. Never use before the human merge gate.
 ---
 
 # Close Story Worktree
@@ -12,10 +12,10 @@ merge verification and local Git cleanup.
 
 Resolve these before changing state:
 
-- story ID;
+- story ID when one exists;
 - repository root;
 - exact head branch;
-- exact worktree path;
+- exact worktree path when the branch is checked out outside the primary worktree;
 - PR URL or number;
 - base branch.
 
@@ -32,23 +32,25 @@ convention into another.
    `mergedAt` set and targets the expected base branch.
 3. If the PR is open, draft, closed without merge, or ambiguous, stop. Return
    the PR URL and leave the worktree and branch unchanged.
-4. Require the story worktree to be clean. Never reset, clean, stash, or force
-   removal to make it appear clean.
+4. If the branch has a worktree, require it to be clean. Never reset, clean,
+   stash, or force removal to make it appear clean. If it has no worktree,
+   continue with local-branch-only cleanup.
 5. Run `scripts/cleanup-merged-story.sh` without `--apply` to preview the exact
    targets and safety checks.
 6. Run the same command with `--apply` only when the user has placed cleanup in
    scope. The script fetches the PR base, verifies the branch tip is an ancestor
-   of the updated base, removes the exact worktree without force, then uses
-   `git branch -d`.
-7. Confirm the path no longer appears in `git worktree list --porcelain` and
-   the local branch no longer exists.
+   of the updated base, removes the exact worktree without force when present,
+   then uses `git branch -d`.
+7. Confirm any targeted worktree path no longer appears in
+   `git worktree list --porcelain` and the local branch no longer exists.
 8. Report the merged PR, removed worktree, deleted local branch, and any
    intentionally retained remote branch.
 
 ## Safety rules
 
 - Never merge the PR. The human reviews and merges.
-- Never run cleanup based only on a story ID guess.
+- Never run cleanup based only on a story ID guess. An explicit local branch
+  may be cleaned without a story ID after the exact merged PR is verified.
 - Never use `git worktree remove --force`, `git branch -D`, `git reset`,
   `git clean`, or a recursive filesystem deletion.
 - Never remove the primary worktree, repository root, or a dirty worktree.
@@ -67,6 +69,12 @@ Preview:
 
 ~~~bash
 "${CLAUDE_SKILL_DIR}/scripts/cleanup-merged-story.sh" AL-151 codex/AL-151
+~~~
+
+Preview a merged branch that has no story ID or worktree:
+
+~~~bash
+"${CLAUDE_SKILL_DIR}/scripts/cleanup-merged-story.sh" codex/fix-fleet-shell
 ~~~
 
 Apply with an explicit worktree when useful:

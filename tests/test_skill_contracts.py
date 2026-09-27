@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GODMODE = ROOT / "claude" / "plugins" / "godmode-dev-flow"
 CLAUDE_SKILL = GODMODE / "skills" / "start-story-multi-agent"
 CODEX_FLOW = ROOT / "codex" / "skills" / "codex-multi-agents-flow"
+CODEX_CLOSE = ROOT / "codex" / "skills" / "close-story-worktree"
 AGENT_TOAST = ROOT / "claude" / "plugins" / "agent-toast"
 def resolve_bash() -> str:
     """The shell under test.
@@ -726,6 +727,138 @@ class ShellBehaviorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         generated = (repo / "scripts" / "verify-project.sh").read_text(encoding="utf-8")
         self.assertIn("go test ./...", generated)
+
+    def test_close_story_handles_story_and_branch_only_cleanup(self) -> None:
+        temp = tempfile.TemporaryDirectory(prefix="close-story-test-")
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        origin = root / "origin.git"
+        repo = root / "repo"
+        repo.mkdir()
+
+        run(["git", "init", "--bare", str(origin)], cwd=root, check=True)
+        run(["git", "init", "-b", "main"], cwd=repo, check=True)
+        run(["git", "config", "user.name", "Skill Test"], cwd=repo, check=True)
+        run(
+            ["git", "config", "user.email", "skill-test@example.invalid"],
+            cwd=repo,
+            check=True,
+        )
+        run(["git", "remote", "add", "origin", str(origin)], cwd=repo, check=True)
+        (repo / "fixture.txt").write_text("initial\n", encoding="utf-8")
+        run(["git", "add", "fixture.txt"], cwd=repo, check=True)
+        run(["git", "commit", "-m", "fixture"], cwd=repo, check=True)
+        run(["git", "push", "-u", "origin", "main"], cwd=repo, check=True)
+
+        mock_bin = root / "bin"
+        mock_bin.mkdir()
+        write_executable(
+            mock_bin / "gh",
+            "#!/usr/bin/env bash\n"
+            "set -eu\n"
+            "if [ \"$1\" = auth ] && [ \"$2\" = status ]; then exit 0; fi\n"
+            "[ \"$1\" = pr ] && [ \"$2\" = view ]\n"
+            "branch=$3\n"
+            "case \"$*\" in\n"
+            "  *headRefName*) printf '%s\\n' \"$branch\" ;;\n"
+            "  *baseRefName*) printf '%s\\n' main ;;\n"
+            "  *url*) printf 'https://example.invalid/pr/%s\\n' \"$branch\" ;;\n"
+            "  *mergedAt*) [ \"$branch\" = codex/open-pr ] || "
+            "printf '%s\\n' 2026-08-25T00:00:00Z ;;\n"
+            "  *) exit 2 ;;\n"
+            "esac\n",
+        )
+        env = os.environ.copy()
+        env["PATH"] = str(mock_bin) + os.pathsep + env["PATH"]
+        cleanup = CODEX_CLOSE / "scripts" / "cleanup-merged-story.sh"
+
+        branch_only = "codex/fix-without-story-id"
+        run(["git", "switch", "-c", branch_only], cwd=repo, check=True)
+        (repo / "fixture.txt").write_text("branch-only\n", encoding="utf-8")
+        run(["git", "commit", "-am", "branch-only"], cwd=repo, check=True)
+        run(["git", "push", "-u", "origin", branch_only], cwd=repo, check=True)
+        run(["git", "switch", "main"], cwd=repo, check=True)
+        run(["git", "merge", "--no-ff", branch_only, "-m", "merge branch"], cwd=repo, check=True)
+        run(["git", "push", "origin", "main"], cwd=repo, check=True)
+
+        preview = run([BASH, str(cleanup), branch_only], cwd=repo, env=env)
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertIn("worktree: none", preview.stdout)
+        self.assertIn("remove the local branch", preview.stdout)
+        self.assertEqual(
+            run(
+                ["git", "show-ref", "--verify", f"refs/heads/{branch_only}"],
+                cwd=repo,
+            ).returncode,
+            0,
+        )
+
+        applied = run(
+            [BASH, str(cleanup), branch_only, "--apply"],
+            cwd=repo,
+            env=env,
+        )
+        self.assertEqual(applied.returncode, 0, applied.stderr)
+        self.assertNotEqual(
+            run(
+                ["git", "show-ref", "--verify", f"refs/heads/{branch_only}"],
+                cwd=repo,
+            ).returncode,
+            0,
+        )
+        self.assertEqual(
+            run(
+                [
+                    "git",
+                    "show-ref",
+                    "--verify",
+                    f"refs/remotes/origin/{branch_only}",
+                ],
+                cwd=repo,
+            ).returncode,
+            0,
+        )
+
+        story_id = "AL-123"
+        story_branch = f"codex/{story_id}"
+        berth = root / "berth"
+        run(
+            ["git", "worktree", "add", "-b", story_branch, str(berth), "main"],
+            cwd=repo,
+            check=True,
+        )
+        (berth / "story.txt").write_text("story\n", encoding="utf-8")
+        run(["git", "add", "story.txt"], cwd=berth, check=True)
+        run(["git", "commit", "-m", "story"], cwd=berth, check=True)
+        run(["git", "push", "-u", "origin", story_branch], cwd=berth, check=True)
+        run(["git", "merge", "--no-ff", story_branch, "-m", "merge story"], cwd=repo, check=True)
+        run(["git", "push", "origin", "main"], cwd=repo, check=True)
+
+        story_applied = run(
+            [BASH, str(cleanup), story_id, story_branch, "--apply"],
+            cwd=repo,
+            env=env,
+        )
+        self.assertEqual(story_applied.returncode, 0, story_applied.stderr)
+        self.assertFalse(berth.exists())
+        self.assertNotIn(str(berth), run(["git", "worktree", "list"], cwd=repo).stdout)
+
+        open_branch = "codex/open-pr"
+        run(["git", "branch", open_branch, "main"], cwd=repo, check=True)
+        refused = run(
+            [BASH, str(cleanup), open_branch, "--apply"],
+            cwd=repo,
+            env=env,
+        )
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("PR is not merged", refused.stderr)
+        self.assertEqual(
+            run(
+                ["git", "show-ref", "--verify", f"refs/heads/{open_branch}"],
+                cwd=repo,
+            ).returncode,
+            0,
+        )
 
     def test_agent_toast_notifies_through_mocked_os_command(self) -> None:
         temp = tempfile.TemporaryDirectory(prefix="agent-toast-test-")
