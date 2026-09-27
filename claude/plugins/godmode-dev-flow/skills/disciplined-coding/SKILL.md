@@ -63,14 +63,28 @@ Keep every changed line traceable to the requested outcome or its verification.
 
 Before finishing, inspect the diff and remove accidental or speculative changes.
 
-## 4. Verify the Outcome
+## 4. Keep Comments Rare
+
+Code should explain itself through names and structure. A comment is the exception.
+
+- Write no comment when the code reads clearly on its own.
+- Comment only where the code is genuinely hard to follow: a non-obvious invariant, a workaround for an external bug, a surprising constraint. Keep it to 2-3 lines.
+- Explain why, never what. Do not restate the code, echo a function name, or label obvious steps.
+- Do not narrate the change ("changed X to Y", "this used to be Z", "added for issue #N"). History belongs in the commit message.
+- Do not add docstrings, section banners, or TODOs that the surrounding code does not already use.
+- Record decisions, measurements, and tradeoffs in the commit message, spec, or project notes, not in a comment block above the code.
+- When a comment feels necessary, first try a clearer name or a smaller function.
+
+Heavy commentary makes a diff expensive to review and makes the code read as machine-written.
+
+## 5. Verify the Outcome
 
 Use the cheapest reliable evidence first, then expand in proportion to risk.
 
 1. Run the narrowest test, type check, lint check, build, or reproduction that proves the change.
 2. Add or update a regression test when behavior changes or a bug is fixed.
 3. Run broader checks when the change touches shared code, public interfaces, persistence, security, or build configuration.
-4. Read the final diff for scope, clarity, and unintended behavior.
+4. Read the final diff for scope, clarity, unintended behavior, and comments that restate code or narrate the change.
 5. Report what passed, what was not run, and any remaining uncertainty.
 
 Do not claim success from code inspection alone when an executable check is available.
@@ -83,4 +97,5 @@ Finish only when all applicable answers are yes:
 - Is this the simplest complete solution?
 - Can every changed line be connected to the request?
 - Did the change clean up only the artifacts it created?
+- Does every added comment explain a non-obvious why in 2-3 lines or fewer?
 - Do the verification results demonstrate the stated success criteria?
